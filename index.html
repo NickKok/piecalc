@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empanada Calculator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; }
+        input { padding: 5px; margin: 5px; }
+        button { padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        #results { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Empanada Order Calculator</h1>
+    <div class="section">
+        <label>Beef Empanadas: <input type="number" id="beef" min="0" value="0"></label><br>
+        <label>Chicken Empanadas: <input type="number" id="chicken" min="0" value="0"></label><br>
+        <button onclick="calculate()">Calculate</button>
+    </div>
+    <div id="results"></div>
+
+    <script>
+        function calculate() {
+            const beef = parseInt(document.getElementById('beef').value) || 0;
+            const chicken = parseInt(document.getElementById('chicken').value) || 0;
+            const totalEmpanadas = beef + chicken;
+
+            // Dough calculations
+            const batchSize = 7;
+            const batches = Math.ceil(totalEmpanadas / batchSize);
+            const cakeFlour = batches * 0.150; // kg
+            const breadFlour = batches * 0.100; // kg
+            const margarine = batches * 0.100; // kg
+            const water = batches * 0.150; // liters
+
+            // Filling calculations (per empanada: 55g total, 27.5g meat, 27.5g non-meat)
+            const fillingPerEmpanada = 0.055; // kg
+            const meatPerEmpanada = 0.0275; // kg
+            const nonMeatPerEmpanada = 0.0275; // kg
+            const potatoPerEmpanada = nonMeatPerEmpanada * 0.3; // 30% of non-meat
+            const onionPer400gMeat = 0.150; // kg
+
+            // Beef pot
+            const beefFilling = beef * fillingPerEmpanada;
+            const beefMeat = beef * meatPerEmpanada;
+            const beefOnion = (beefMeat / 0.4) * onionPer400gMeat;
+            const beefPotato = beef * potatoPerEmpanada;
+            const beefVeggies = beefFilling - beefMeat - beefOnion - beefPotato;
+
+            // Chicken pot
+            const chickenFilling = chicken * fillingPerEmpanada;
+            const chickenMeat = chicken * meatPerEmpanada;
+            const chickenOnion = (chickenMeat / 0.4) * onionPer400gMeat;
+            const chickenPotato = chicken * potatoPerEmpanada;
+            const chickenVeggies = chickenFilling - chickenMeat - chickenOnion - chickenPotato;
+
+            // Results
+            let result = `<h2>Results for ${beef} Beef + ${chicken} Chicken Empanadas</h2>`;
+            result += `<h3>Dough (${batches} batches):</h3>`;
+            result += `<ul>
+                <li>Cake Flour: ${cakeFlour.toFixed(2)} kg</li>
+                <li>Bread Flour: ${breadFlour.toFixed(2)} kg</li>
+                <li>Margarine: ${margarine.toFixed(2)} kg</li>
+                <li>Water: ${water.toFixed(2)} L</li>
+                <li>Salt: ${(batches * 0.75).toFixed(2)} tsp</li>
+                <li>Baking Powder: ${(batches * 0.25).toFixed(2)} tsp</li>
+                <li>Cayenne Pepper: ${(batches * 0.5).toFixed(2)} tsp</li>
+                <li>Milk Powder: ${(batches * 1).toFixed(2)} tsp</li>
+                <li>Turmeric: ${(batches * 0.5).toFixed(2)} tsp</li>
+            </ul>`;
+
+            result += `<h3>Beef Pot:</h3>`;
+            result += `<ul>
+                <li>Beef: ${beefMeat.toFixed(2)} kg</li>
+                <li>Onion: ${beefOnion.toFixed(2)} kg</li>
+                <li>Potato: ${beefPotato.toFixed(2)} kg</li>
+                <li>Mixed Veggies: ${beefVeggies.toFixed(2)} kg</li>
+            </ul>`;
+
+            result += `<h3>Chicken Pot:</h3>`;
+            result += `<ul>
+                <li>Chicken: ${chickenMeat.toFixed(2)} kg</li>
+                <li>Onion: ${chickenOnion.toFixed(2)} kg</li>
+                <li>Potato: ${chickenPotato.toFixed(2)} kg</li>
+                <li>Mixed Veggies: ${chickenVeggies.toFixed(2)} kg</li>
+            </ul>`;
+
+            document.getElementById('results').innerHTML = result;
+        }
+    </script>
+</body>
+</html>
