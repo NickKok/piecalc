@@ -36,11 +36,11 @@
             const margarine = batches * 0.100; // kg
             const water = batches * 0.150; // liters
 
-            // Filling calculations (per empanada: 55g total, 27.5g meat, 27.5g non-meat)
+            // Filling calculations
             const fillingPerEmpanada = 0.055; // kg
             const meatPerEmpanada = 0.0275; // kg
             const nonMeatPerEmpanada = 0.0275; // kg
-            const potatoPerEmpanada = nonMeatPerEmpanada * 0.3; // 30% of non-meat
+            const potatoPerEmpanada = nonMeatPerEmpanada * 0.3;
             const onionPer400gMeat = 0.150; // kg
 
             // Beef pot
@@ -56,6 +56,28 @@
             const chickenOnion = (chickenMeat / 0.4) * onionPer400gMeat;
             const chickenPotato = chicken * potatoPerEmpanada;
             const chickenVeggies = chickenFilling - chickenMeat - chickenOnion - chickenPotato;
+
+            // Cost calculations (ZAR)
+            const costCakeFlour = cakeFlour * 20;
+            const costBreadFlour = breadFlour * 22;
+            const costMargarine = margarine * 35;
+            const costWater = water * 0.02;
+            const costSpices = batches * 1; // R1 per batch for all spices
+            const doughCost = costCakeFlour + costBreadFlour + costMargarine + costWater + costSpices;
+
+            const costBeef = beefMeat * 120;
+            const costBeefOnion = beefOnion * 15;
+            const costBeefPotato = beefPotato * 18;
+            const costBeefVeggies = beefVeggies * 25;
+            const beefCost = costBeef + costBeefOnion + costBeefPotato + costBeefVeggies;
+
+            const costChicken = chickenMeat * 70;
+            const costChickenOnion = chickenOnion * 15;
+            const costChickenPotato = chickenPotato * 18;
+            const costChickenVeggies = chickenVeggies * 25;
+            const chickenCost = costChicken + costChickenOnion + costChickenPotato + costChickenVeggies;
+
+            const totalCost = doughCost + beefCost + chickenCost;
 
             // Results
             let result = `<h2>Results for ${beef} Beef + ${chicken} Chicken Empanadas</h2>`;
@@ -86,6 +108,33 @@
                 <li>Onion: ${chickenOnion.toFixed(2)} kg</li>
                 <li>Potato: ${chickenPotato.toFixed(2)} kg</li>
                 <li>Mixed Veggies: ${chickenVeggies.toFixed(2)} kg</li>
+            </ul>`;
+
+            result += `<h3>Estimated Costs (ZAR):</h3>`;
+            result += `<ul>
+                <li>Dough Total: R${doughCost.toFixed(2)}</li>
+                <ul>
+                    <li>Cake Flour: R${costCakeFlour.toFixed(2)}</li>
+                    <li>Bread Flour: R${costBreadFlour.toFixed(2)}</li>
+                    <li>Margarine: R${costMargarine.toFixed(2)}</li>
+                    <li>Water: R${costWater.toFixed(2)}</li>
+                    <li>Spices: R${costSpices.toFixed(2)}</li>
+                </ul>
+                <li>Beef Filling: R${beefCost.toFixed(2)}</li>
+                <ul>
+                    <li>Beef: R${costBeef.toFixed(2)}</li>
+                    <li>Onion: R${costBeefOnion.toFixed(2)}</li>
+                    <li>Potato: R${costBeefPotato.toFixed(2)}</li>
+                    <li>Mixed Veggies: R${costBeefVeggies.toFixed(2)}</li>
+                </ul>
+                <li>Chicken Filling: R${chickenCost.toFixed(2)}</li>
+                <ul>
+                    <li>Chicken: R${costChicken.toFixed(2)}</li>
+                    <li>Onion: R${costChickenOnion.toFixed(2)}</li>
+                    <li>Potato: R${costChickenPotato.toFixed(2)}</li>
+                    <li>Mixed Veggies: R${costChickenVeggies.toFixed(2)}</li>
+                </ul>
+                <li><strong>Total Cost: R${totalCost.toFixed(2)}</strong></li>
             </ul>`;
 
             document.getElementById('results').innerHTML = result;
