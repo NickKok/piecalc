@@ -7,30 +7,67 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .section { margin: 20px 0; }
-        input { padding: 5px; margin: 5px; }
+        input, select { padding: 5px; margin: 5px; }
         button { padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
         button:hover { background-color: #45a049; }
         #results { margin-top: 20px; }
+        #orderInputs, #ingredientInputs { display: none; }
     </style>
 </head>
 <body>
     <h1>Empanada Order Calculator</h1>
     <div class="section">
-        <label>Beef Empanadas: <input type="number" id="beef" min="0" value="0"></label><br>
-        <label>Chicken Empanadas: <input type="number" id="chicken" min="0" value="0"></label><br>
+        <label>Calculation Mode: 
+            <select id="mode" onchange="toggleInputs()">
+                <option value="order">By Order</option>
+                <option value="ingredient">By Ingredient</option>
+            </select>
+        </label><br>
+        <div id="orderInputs">
+            <label>Beef Empanadas: <input type="number" id="beef" min="0" value="0"></label><br>
+            <label>Chicken Empanadas: <input type="number" id="chicken" min="0" value="0"></label><br>
+        </div>
+        <div id="ingredientInputs">
+            <label>Ingredient: 
+                <select id="ingredientType">
+                    <option value="chicken">Chicken</option>
+                    <option value="beef">Beef</option>
+                </select>
+            </label><br>
+            <label>Weight (kg): <input type="number" id="ingredientWeight" min="0" step="0.01" value="0"></label><br>
+        </div>
         <button onclick="calculate()">Calculate</button>
     </div>
     <div id="results"></div>
 
     <script>
+        function toggleInputs() {
+            const mode = document.getElementById('mode').value;
+            document.getElementById('orderInputs').style.display = mode === 'order' ? 'block' : 'none';
+            document.getElementById('ingredientInputs').style.display = mode === 'ingredient' ? 'block' : 'none';
+        }
+
         function calculate() {
-            const beef = parseInt(document.getElementById('beef').value) || 0;
-            const chicken = parseInt(document.getElementById('chicken').value) || 0;
+            const mode = document.getElementById('mode').value;
+            let beef = 0, chicken = 0, batches = 0;
+
+            if (mode === 'order') {
+                beef = parseInt(document.getElementById('beef').value) || 0;
+                chicken = parseInt(document.getElementById('chicken').value) || 0;
+                batches = Math.ceil((beef + chicken) / 7);
+            } else {
+                const weight = parseFloat(document.getElementById('ingredientWeight').value) || 0;
+                const type = document.getElementById('ingredientType').value;
+                const empanadas = Math.floor(weight / 0.0275); // 27.5g meat per empanada
+                batches = Math.ceil(empanadas / 7);
+                if (type === 'beef') beef = empanadas;
+                else chicken = empanadas;
+            }
+
             const totalEmpanadas = beef + chicken;
 
             // Dough calculations
             const batchSize = 7;
-            const batches = Math.ceil(totalEmpanadas / batchSize);
             const cakeFlour = batches * 0.150; // kg
             const breadFlour = batches * 0.100; // kg
             const margarine = batches * 0.100; // kg
@@ -62,7 +99,7 @@
             const costBreadFlour = breadFlour * 22;
             const costMargarine = margarine * 35;
             const costWater = water * 0.02;
-            const costSpices = batches * 1; // R1 per batch for all spices
+            const costSpices = batches * 1;
             const doughCost = costCakeFlour + costBreadFlour + costMargarine + costWater + costSpices;
 
             const costBeef = beefMeat * 120;
@@ -81,6 +118,10 @@
 
             // Results
             let result = `<h2>Results for ${beef} Beef + ${chicken} Chicken Empanadas</h2>`;
+            if (mode === 'ingredient') {
+                const type = document.getElementById('ingredientType').value;
+                result = `<h2>Results for ${totalEmpanadas} ${type.charAt(0).toUpperCase() + type.slice(1)} Empanadas (based on ${document.getElementById('ingredientWeight').value} kg)</h2>`;
+            }
             result += `<h3>Dough (${batches} batches):</h3>`;
             result += `<ul>
                 <li>Cake Flour: ${cakeFlour.toFixed(2)} kg</li>
@@ -94,21 +135,25 @@
                 <li>Turmeric: ${(batches * 0.5).toFixed(2)} tsp</li>
             </ul>`;
 
-            result += `<h3>Beef Pot:</h3>`;
-            result += `<ul>
-                <li>Beef: ${beefMeat.toFixed(2)} kg</li>
-                <li>Onion: ${beefOnion.toFixed(2)} kg</li>
-                <li>Potato: ${beefPotato.toFixed(2)} kg</li>
-                <li>Mixed Veggies: ${beefVeggies.toFixed(2)} kg</li>
-            </ul>`;
+            if (beef > 0) {
+                result += `<h3>Beef Pot:</h3>`;
+                result += `<ul>
+                    <li>Beef: ${beefMeat.toFixed(2)} kg</li>
+                    <li>Onion: ${beefOnion.toFixed(2)} kg</li>
+                    <li>Potato: ${beefPotato.toFixed(2)} kg</li>
+                    <li>Mixed Veggies: ${beefVeggies.toFixed(2)} kg</li>
+                </ul>`;
+            }
 
-            result += `<h3>Chicken Pot:</h3>`;
-            result += `<ul>
-                <li>Chicken: ${chickenMeat.toFixed(2)} kg</li>
-                <li>Onion: ${chickenOnion.toFixed(2)} kg</li>
-                <li>Potato: ${chickenPotato.toFixed(2)} kg</li>
-                <li>Mixed Veggies: ${chickenVeggies.toFixed(2)} kg</li>
-            </ul>`;
+            if (chicken > 0) {
+                result += `<h3>Chicken Pot:</h3>`;
+                result += `<ul>
+                    <li>Chicken: ${chickenMeat.toFixed(2)} kg</li>
+                    <li>Onion: ${chickenOnion.toFixed(2)} kg</li>
+                    <li>Potato: ${chickenPotato.toFixed(2)} kg</li>
+                    <li>Mixed Veggies: ${chickenVeggies.toFixed(2)} kg</li>
+                </ul>`;
+            }
 
             result += `<h3>Estimated Costs (ZAR):</h3>`;
             result += `<ul>
@@ -120,25 +165,28 @@
                     <li>Water: R${costWater.toFixed(2)}</li>
                     <li>Spices: R${costSpices.toFixed(2)}</li>
                 </ul>
-                <li>Beef Filling: R${beefCost.toFixed(2)}</li>
+                ${beef > 0 ? `<li>Beef Filling: R${beefCost.toFixed(2)}</li>
                 <ul>
                     <li>Beef: R${costBeef.toFixed(2)}</li>
                     <li>Onion: R${costBeefOnion.toFixed(2)}</li>
                     <li>Potato: R${costBeefPotato.toFixed(2)}</li>
                     <li>Mixed Veggies: R${costBeefVeggies.toFixed(2)}</li>
-                </ul>
-                <li>Chicken Filling: R${chickenCost.toFixed(2)}</li>
+                </ul>` : ''}
+                ${chicken > 0 ? `<li>Chicken Filling: R${chickenCost.toFixed(2)}</li>
                 <ul>
                     <li>Chicken: R${costChicken.toFixed(2)}</li>
                     <li>Onion: R${costChickenOnion.toFixed(2)}</li>
                     <li>Potato: R${costChickenPotato.toFixed(2)}</li>
                     <li>Mixed Veggies: R${costChickenVeggies.toFixed(2)}</li>
-                </ul>
+                </ul>` : ''}
                 <li><strong>Total Cost: R${totalCost.toFixed(2)}</strong></li>
             </ul>`;
 
             document.getElementById('results').innerHTML = result;
         }
+
+        // Initialize with order mode visible
+        toggleInputs();
     </script>
 </body>
 </html>
