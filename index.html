@@ -67,7 +67,8 @@
         ul ul {
             padding-left: 20px;
         }
-        #orderInputs, #ingredientInputs { display: none; }
+        #orderInputs, #ingredientInputs, #priceInputs { display: none; }
+        #priceInputs.active { display: block; }
     </style>
 </head>
 <body>
@@ -93,14 +94,90 @@
             <label>Weight (kg): <input type="number" id="ingredientWeight" min="0" step="0.01" value="0"></label><br>
         </div>
         <button onclick="calculate()">Calculate</button>
+        <button onclick="togglePriceInputs()">Update Prices</button>
+    </div>
+    <div class="section" id="priceInputs">
+        <h3>Update Ingredient Prices (ZAR)</h3>
+        <label>Cake Flour (per kg): <input type="number" id="priceCakeFlour" step="0.01" min="0"></label><br>
+        <label>Bread Flour (per kg): <input type="number" id="priceBreadFlour" step="0.01" min="0"></label><br>
+        <label>Margarine (per kg): <input type="number" id="priceMargarine" step="0.01" min="0"></label><br>
+        <label>Water (per L): <input type="number" id="priceWater" step="0.01" min="0"></label><br>
+        <label>Spices (per batch): <input type="number" id="priceSpices" step="0.01" min="0"></label><br>
+        <label>Beef (per kg): <input type="number" id="priceBeef" step="0.01" min="0"></label><br>
+        <label>Chicken (per kg): <input type="number" id="priceChicken" step="0.01" min="0"></label><br>
+        <label>Onion (per kg): <input type="number" id="priceOnion" step="0.01" min="0"></label><br>
+        <label>Potato (per kg): <input type="number" id="pricePotato" step="0.01" min="0"></label><br>
+        <label>Mixed Veggies (per kg): <input type="number" id="priceVeggies" step="0.01" min="0"></label><br>
+        <button onclick="savePrices()">Save Prices</button>
     </div>
     <div id="results"></div>
 
     <script>
+        // Default prices
+        const defaultPrices = {
+            cakeFlour: 20,
+            breadFlour: 22,
+            margarine: 35,
+            water: 0.02,
+            spices: 1,
+            beef: 120,
+            chicken: 70,
+            onion: 15,
+            potato: 18,
+            veggies: 25
+        };
+
+        // Load saved prices or use defaults
+        let prices = JSON.parse(localStorage.getItem('empanadaPrices')) || { ...defaultPrices };
+        loadPriceInputs();
+
         function toggleInputs() {
             const mode = document.getElementById('mode').value;
             document.getElementById('orderInputs').style.display = mode === 'order' ? 'block' : 'none';
             document.getElementById('ingredientInputs').style.display = mode === 'ingredient' ? 'block' : 'none';
+            document.getElementById('priceInputs').classList.remove('active');
+        }
+
+        function togglePriceInputs() {
+            const priceSection = document.getElementById('priceInputs');
+            priceSection.classList.toggle('active');
+            if (priceSection.classList.contains('active')) {
+                document.getElementById('orderInputs').style.display = 'none';
+                document.getElementById('ingredientInputs').style.display = 'none';
+            } else {
+                toggleInputs();
+            }
+        }
+
+        function loadPriceInputs() {
+            document.getElementById('priceCakeFlour').value = prices.cakeFlour;
+            document.getElementById('priceBreadFlour').value = prices.breadFlour;
+            document.getElementById('priceMargarine').value = prices.margarine;
+            document.getElementById('priceWater').value = prices.water;
+            document.getElementById('priceSpices').value = prices.spices;
+            document.getElementById('priceBeef').value = prices.beef;
+            document.getElementById('priceChicken').value = prices.chicken;
+            document.getElementById('priceOnion').value = prices.onion;
+            document.getElementById('pricePotato').value = prices.potato;
+            document.getElementById('priceVeggies').value = prices.veggies;
+        }
+
+        function savePrices() {
+            prices = {
+                cakeFlour: parseFloat(document.getElementById('priceCakeFlour').value) || defaultPrices.cakeFlour,
+                breadFlour: parseFloat(document.getElementById('priceBreadFlour').value) || defaultPrices.breadFlour,
+                margarine: parseFloat(document.getElementById('priceMargarine').value) || defaultPrices.margarine,
+                water: parseFloat(document.getElementById('priceWater').value) || defaultPrices.water,
+                spices: parseFloat(document.getElementById('priceSpices').value) || defaultPrices.spices,
+                beef: parseFloat(document.getElementById('priceBeef').value) || defaultPrices.beef,
+                chicken: parseFloat(document.getElementById('priceChicken').value) || defaultPrices.chicken,
+                onion: parseFloat(document.getElementById('priceOnion').value) || defaultPrices.onion,
+                potato: parseFloat(document.getElementById('pricePotato').value) || defaultPrices.potato,
+                veggies: parseFloat(document.getElementById('priceVeggies').value) || defaultPrices.veggies
+            };
+            localStorage.setItem('empanadaPrices', JSON.stringify(prices));
+            alert('Prices saved!');
+            togglePriceInputs();
         }
 
         function calculate() {
@@ -114,7 +191,7 @@
             } else {
                 const weight = parseFloat(document.getElementById('ingredientWeight').value) || 0;
                 const type = document.getElementById('ingredientType').value;
-                const empanadas = Math.floor(weight / 0.024); // Fixed to 24g meat per empanada
+                const empanadas = Math.floor(weight / 0.024);
                 batches = Math.ceil(empanadas / 7);
                 if (type === 'beef') beef = empanadas;
                 else chicken = empanadas;
@@ -150,24 +227,24 @@
             const chickenPotato = chicken * potatoPerEmpanada;
             const chickenVeggies = chickenFilling - chickenMeat - chickenOnion - chickenPotato;
 
-            // Cost calculations (ZAR)
-            const costCakeFlour = cakeFlour * 20;
-            const costBreadFlour = breadFlour * 22;
-            const costMargarine = margarine * 35;
-            const costWater = water * 0.02;
-            const costSpices = batches * 1;
+            // Cost calculations using custom prices
+            const costCakeFlour = cakeFlour * prices.cakeFlour;
+            const costBreadFlour = breadFlour * prices.breadFlour;
+            const costMargarine = margarine * prices.margarine;
+            const costWater = water * prices.water;
+            const costSpices = batches * prices.spices;
             const doughCost = costCakeFlour + costBreadFlour + costMargarine + costWater + costSpices;
 
-            const costBeef = beefMeat * 120;
-            const costBeefOnion = beefOnion * 15;
-            const costBeefPotato = beefPotato * 18;
-            const costBeefVeggies = beefVeggies * 25;
+            const costBeef = beefMeat * prices.beef;
+            const costBeefOnion = beefOnion * prices.onion;
+            const costBeefPotato = beefPotato * prices.potato;
+            const costBeefVeggies = beefVeggies * prices.veggies;
             const beefCost = costBeef + costBeefOnion + costBeefPotato + costBeefVeggies;
 
-            const costChicken = chickenMeat * 70;
-            const costChickenOnion = chickenOnion * 15;
-            const costChickenPotato = chickenPotato * 18;
-            const costChickenVeggies = chickenVeggies * 25;
+            const costChicken = chickenMeat * prices.chicken;
+            const costChickenOnion = chickenOnion * prices.onion;
+            const costChickenPotato = chickenPotato * prices.potato;
+            const costChickenVeggies = chickenVeggies * prices.veggies;
             const chickenCost = costChicken + costChickenOnion + costChickenPotato + costChickenVeggies;
 
             const totalCost = doughCost + beefCost + chickenCost;
@@ -228,25 +305,25 @@
             result += `<ul>
                 <li>Dough Total: R${doughCost.toFixed(2)}</li>
                 <ul>
-                    <li>Cake Flour: R${costCakeFlour.toFixed(2)}</li>
-                    <li>Bread Flour: R${costBreadFlour.toFixed(2)}</li>
-                    <li>Margarine: R${costMargarine.toFixed(2)}</li>
-                    <li>Water: R${costWater.toFixed(2)}</li>
-                    <li>Spices: R${costSpices.toFixed(2)}</li>
+                    <li>Cake Flour: R${costCakeFlour.toFixed(2)} (R${prices.cakeFlour}/kg)</li>
+                    <li>Bread Flour: R${costBreadFlour.toFixed(2)} (R${prices.breadFlour}/kg)</li>
+                    <li>Margarine: R${costMargarine.toFixed(2)} (R${prices.margarine}/kg)</li>
+                    <li>Water: R${costWater.toFixed(2)} (R${prices.water}/L)</li>
+                    <li>Spices: R${costSpices.toFixed(2)} (R${prices.spices}/batch)</li>
                 </ul>
                 ${beef > 0 ? `<li>Beef Filling: R${beefCost.toFixed(2)}</li>
                 <ul>
-                    <li>Beef: R${costBeef.toFixed(2)}</li>
-                    <li>Onion: R${costBeefOnion.toFixed(2)}</li>
-                    <li>Potato: R${costBeefPotato.toFixed(2)}</li>
-                    <li>Mixed Veggies: R${costBeefVeggies.toFixed(2)}</li>
+                    <li>Beef: R${costBeef.toFixed(2)} (R${prices.beef}/kg)</li>
+                    <li>Onion: R${costBeefOnion.toFixed(2)} (R${prices.onion}/kg)</li>
+                    <li>Potato: R${costBeefPotato.toFixed(2)} (R${prices.potato}/kg)</li>
+                    <li>Mixed Veggies: R${costBeefVeggies.toFixed(2)} (R${prices.veggies}/kg)</li>
                 </ul>` : ''}
                 ${chicken > 0 ? `<li>Chicken Filling: R${chickenCost.toFixed(2)}</li>
                 <ul>
-                    <li>Chicken: R${costChicken.toFixed(2)}</li>
-                    <li>Onion: R${costChickenOnion.toFixed(2)}</li>
-                    <li>Potato: R${costChickenPotato.toFixed(2)}</li>
-                    <li>Mixed Veggies: R${costChickenVeggies.toFixed(2)}</li>
+                    <li>Chicken: R${costChicken.toFixed(2)} (R${prices.chicken}/kg)</li>
+                    <li>Onion: R${costChickenOnion.toFixed(2)} (R${prices.onion}/kg)</li>
+                    <li>Potato: R${costChickenPotato.toFixed(2)} (R${prices.potato}/kg)</li>
+                    <li>Mixed Veggies: R${costChickenVeggies.toFixed(2)} (R${prices.veggies}/kg)</li>
                 </ul>` : ''}
                 <li><strong>Total Cost: R${totalCost.toFixed(2)}</strong></li>
             </ul>`;
