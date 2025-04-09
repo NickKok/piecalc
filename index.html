@@ -114,7 +114,7 @@
             } else {
                 const weight = parseFloat(document.getElementById('ingredientWeight').value) || 0;
                 const type = document.getElementById('ingredientType').value;
-                const empanadas = Math.floor(weight / 0.0275);
+                const empanadas = Math.floor(weight / 0.024); // 24g meat per empanada
                 batches = Math.ceil(empanadas / 7);
                 if (type === 'beef') beef = empanadas;
                 else chicken = empanadas;
@@ -124,16 +124,16 @@
 
             // Dough calculations
             const batchSize = 7;
-            const cakeFlour = batches * 0.150; // kg
-            const breadFlour = batches * 0.100; // kg
-            const margarine = batches * 0.100; // kg
-            const water = batches * 0.150; // liters
+            const cakeFlour = batches * 0.1875; // kg
+            const breadFlour = batches * 0.125; // kg
+            const margarine = batches * 0.125; // kg
+            const water = batches * 0.1875; // liters
 
             // Filling calculations
-            const fillingPerEmpanada = 0.055; // kg
-            const meatPerEmpanada = 0.0275; // kg
-            const nonMeatPerEmpanada = 0.0275; // kg
-            const potatoPerEmpanada = nonMeatPerEmpanada * 0.3;
+            const fillingPerEmpanada = 0.040; // kg
+            const meatPerEmpanada = 0.024; // kg (60%)
+            const nonMeatPerEmpanada = 0.016; // kg (40%)
+            const potatoPerEmpanada = nonMeatPerEmpanada * 0.3; // 4.8g
             const onionPer400gMeat = 0.150; // kg
 
             // Beef pot
@@ -181,15 +181,15 @@
             result += `<h3>Dough Requirements (${batches} batches):</h3>`;
             result += `<p><strong>Per Batch (7 empanadas):</strong></p>`;
             result += `<ul>
-                <li>Cake Flour: 0.15 kg</li>
-                <li>Bread Flour: 0.10 kg</li>
-                <li>Margarine: 0.10 kg</li>
-                <li>Water: 0.15 L</li>
-                <li>Salt: 0.75 tsp</li>
-                <li>Baking Powder: 0.25 tsp</li>
-                <li>Cayenne Pepper: 0.50 tsp</li>
-                <li>Milk Powder: 1.00 tsp</li>
-                <li>Turmeric: 0.50 tsp</li>
+                <li>Cake Flour: 0.1875 kg</li>
+                <li>Bread Flour: 0.125 kg</li>
+                <li>Margarine: 0.125 kg</li>
+                <li>Water: 0.1875 L</li>
+                <li>Salt: 0.94 tsp</li>
+                <li>Baking Powder: 0.31 tsp</li>
+                <li>Cayenne Pepper: 0.63 tsp</li>
+                <li>Milk Powder: 1.25 tsp</li>
+                <li>Turmeric: 0.63 tsp</li>
             </ul>`;
             result += `<p><strong>Total Shopping List:</strong></p>`;
             result += `<ul>
@@ -197,11 +197,11 @@
                 <li>Bread Flour: ${breadFlour.toFixed(2)} kg</li>
                 <li>Margarine: ${margarine.toFixed(2)} kg</li>
                 <li>Water: ${water.toFixed(2)} L</li>
-                <li>Salt: ${(batches * 0.75).toFixed(2)} tsp</li>
-                <li>Baking Powder: ${(batches * 0.25).toFixed(2)} tsp</li>
-                <li>Cayenne Pepper: ${(batches * 0.5).toFixed(2)} tsp</li>
-                <li>Milk Powder: ${(batches * 1).toFixed(2)} tsp</li>
-                <li>Turmeric: ${(batches * 0.5).toFixed(2)} tsp</li>
+                <li>Salt: ${(batches * 0.9375).toFixed(2)} tsp</li>
+                <li>Baking Powder: ${(batches * 0.3125).toFixed(2)} tsp</li>
+                <li>Cayenne Pepper: ${(batches * 0.625).toFixed(2)} tsp</li>
+                <li>Milk Powder: ${(batches * 1.25).toFixed(2)} tsp</li>
+                <li>Turmeric: ${(batches * 0.625).toFixed(2)} tsp</li>
             </ul>`;
 
             if (beef > 0) {
