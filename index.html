@@ -114,7 +114,7 @@
             } else {
                 const weight = parseFloat(document.getElementById('ingredientWeight').value) || 0;
                 const type = document.getElementById('ingredientType').value;
-                const empanadas = Math.floor(weight / 0.024); // 24g meat per empanada
+                const empanadas = Math.floor(weight / 0.024); // Fixed to 24g meat per empanada
                 batches = Math.ceil(empanadas / 7);
                 if (type === 'beef') beef = empanadas;
                 else chicken = empanadas;
