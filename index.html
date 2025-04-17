@@ -135,7 +135,7 @@
         let prices = JSON.parse(localStorage.getItem('empanadaPrices')) || { ...defaultPrices };
         loadPriceInputs();
 
-        Gasssfunction toggleInputs() {
+        function toggleInputs() {
             const mode = document.getElementById('mode').value;
             document.getElementById('orderInputs').style.display = mode === 'order' ? 'block' : 'none';
             document.getElementById('ingredientInputs').style.display = mode === 'ingredient' ? 'block' : 'none';
