@@ -54,7 +54,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        h2, h3 {
+        h2, h3, h4 {
             color: #2980b9;
         }
         ul {
@@ -67,8 +67,12 @@
         ul ul {
             padding-left: 20px;
         }
-        #orderInputs, #ingredientInputs, #priceInputs { display: none; }
-        #priceInputs.active { display: block; }
+        #orderInputs, #ingredientInputs, #priceInputs, #recipeInputs, #addIngredientInputs { display: none; }
+        #priceInputs.active, #recipeInputs.active, #addIngredientInputs.active { display: block; }
+        .warning {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -95,6 +99,8 @@
         </div>
         <button onclick="calculate()">Calculate</button>
         <button onclick="togglePriceInputs()">Update Prices</button>
+        <button onclick="toggleRecipeInputs()">Adjust Recipe</button>
+        <button onclick="toggleAddIngredientInputs()">Add Ingredient</button>
     </div>
     <div class="section" id="priceInputs">
         <h3>Update Ingredient Prices (ZAR)</h3>
@@ -110,11 +116,82 @@
         <label>Onion (per kg): <input type="number" id="priceOnion" step="0.01" min="0"></label><br>
         <label>Potato (per kg): <input type="number" id="pricePotato" step="0.01" min="0"></label><br>
         <label>Mixed Veggies (per kg): <input type="number" id="priceVeggies" step="0.01" min="0"></label><br>
+        <label>Garlic (per kg): <input type="number" id="priceGarlic" step="0.01" min="0"></label><br>
+        <label>Oil (per L): <input type="number" id="priceOil" step="0.01" min="0"></label><br>
+        <div id="customPriceInputs"></div>
         <button onclick="savePrices()">Save Prices</button>
+    </div>
+    <div class="section" id="recipeInputs">
+        <h3>Adjust Recipe Quantities</h3>
+        <h4>Dough (per batch, total 500g)</h4>
+        <label>Cake Flour (g): <input type="number" id="recipeCakeFlour" step="0.1" min="0"></label><br>
+        <label>Bread Flour (g): <input type="number" id="recipeBreadFlour" step="0.1" min="0"></label><br>
+        <label>Margarine (g): <input type="number" id="recipeMargarine" step="0.1" min="0"></label><br>
+        <label>Water (ml): <input type="number" id="recipeWater" step="0.1" min="0"></label><br>
+        <label>Salt (tsp): <input type="number" id="recipeSalt" step="0.01" min="0"></label><br>
+        <label>Baking Powder (tsp): <input type="number" id="recipeBakingPowder" step="0.01" min="0"></label><br>
+        <label>Cayenne Pepper (tsp): <input type="number" id="recipeCayenne" step="0.01" min="0"></label><br>
+        <label>Milk Powder (tsp): <input type="number" id="recipeMilkPowder" step="0.01" min="0"></label><br>
+        <label>Turmeric (tsp): <input type="number" id="recipeTurmeric" step="0.01" min="0"></label><br>
+        <div id="customDoughRecipeInputs"></div>
+        <h4>Filling (per empanada, total 40g)</h4>
+        <label>Meat (% of filling): <input type="number" id="recipeMeatPercent" step="1" min="0" max="100"></label><br>
+        <label>Aromat (tbsp per empanada, chicken): <input type="number" id="recipeAromat" step="0.01" min="0"></label><br>
+        <label>Biltong Spice (tbsp per empanada, beef): <input type="number" id="recipeBiltongSpice" step="0.01" min="0"></label><br>
+        <label>Garlic (g per empanada): <input type="number" id="recipeGarlic" step="0.1" min="0"></label><br>
+        <label>Oil (g per empanada): <input type="number" id="recipeOil" step="0.1" min="0"></label><br>
+        <div id="customFillingRecipeInputs"></div>
+        <button onclick="saveRecipe()">Save Recipe</button>
+    </div>
+    <div class="section" id="addIngredientInputs">
+        <h3>Add New Ingredient</h3>
+        <label>Name: <input type="text" id="newIngredientName"></label><br>
+        <label>Unit: 
+            <select id="newIngredientUnit">
+                <option value="kg">kg</option>
+                <option value="L">L</option>
+                <option value="tsp">tsp</option>
+                <option value="tbsp">tbsp</option>
+            </select>
+        </label><br>
+        <label>Quantity (per batch for dough, per empanada for filling): <input type="number" id="newIngredientQuantity" step="0.01" min="0"></label><br>
+        <label>Price (ZAR per unit): <input type="number" id="newIngredientPrice" step="0.01" min="0"></label><br>
+        <label>Type: 
+            <select id="newIngredientType">
+                <option value="dough">Dough</option>
+                <option value="filling">Filling</option>
+            </select>
+        </label><br>
+        <button onclick="addIngredient()">Add Ingredient</button>
     </div>
     <div id="results"></div>
 
     <script>
+        // Default recipe quantities
+        const defaultRecipe = {
+            dough: {
+                cakeFlour: 0.1875, // kg
+                breadFlour: 0.125, // kg
+                margarine: 0.125, // kg
+                water: 0.1875, // L
+                salt: 0.9375, // tsp
+                bakingPowder: 0.3125, // tsp
+                cayenne: 0.625, // tsp
+                milkPowder: 1.25, // tsp
+                turmeric: 0.625, // tsp
+                customIngredients: []
+            },
+            filling: {
+                meatPercent: 60, // %
+                nonMeatPerIngredient: 0.0032, // kg (16g / 5)
+                aromat: 0.12, // tbsp per empanada (chicken)
+                biltongSpice: 0.096, // tbsp per empanada (beef)
+                garlic: 0.0032, // kg per empanada
+                oil: 0.0032, // kg per empanada
+                customIngredients: []
+            }
+        };
+
         // Default prices
         const defaultPrices = {
             cakeFlour: 20,
@@ -128,24 +205,59 @@
             aromat: 1,
             onion: 15,
             potato: 18,
-            veggies: 25
+            veggies: 25,
+            garlic: 50,
+            oil: 30,
+            customIngredients: []
         };
 
-        // Load saved prices or use defaults
+        // Load saved recipe and prices
+        let recipe = JSON.parse(localStorage.getItem('empanadaRecipe')) || { ...defaultRecipe };
         let prices = JSON.parse(localStorage.getItem('empanadaPrices')) || { ...defaultPrices };
         loadPriceInputs();
+        loadRecipeInputs();
 
         function toggleInputs() {
             const mode = document.getElementById('mode').value;
             document.getElementById('orderInputs').style.display = mode === 'order' ? 'block' : 'none';
             document.getElementById('ingredientInputs').style.display = mode === 'ingredient' ? 'block' : 'none';
             document.getElementById('priceInputs').classList.remove('active');
+            document.getElementById('recipeInputs').classList.remove('active');
+            document.getElementById('addIngredientInputs').classList.remove('active');
         }
 
         function togglePriceInputs() {
             const priceSection = document.getElementById('priceInputs');
             priceSection.classList.toggle('active');
+            document.getElementById('recipeInputs').classList.remove('active');
+            document.getElementById('addIngredientInputs').classList.remove('active');
             if (priceSection.classList.contains('active')) {
+                document.getElementById('orderInputs').style.display = 'none';
+                document.getElementById('ingredientInputs').style.display = 'none';
+            } else {
+                toggleInputs();
+            }
+        }
+
+        function toggleRecipeInputs() {
+            const recipeSection = document.getElementById('recipeInputs');
+            recipeSection.classList.toggle('active');
+            document.getElementById('priceInputs').classList.remove('active');
+            document.getElementById('addIngredientInputs').classList.remove('active');
+            if (recipeSection.classList.contains('active')) {
+                document.getElementById('orderInputs').style.display = 'none';
+                document.getElementById('ingredientInputs').style.display = 'none';
+            } else {
+                toggleInputs();
+            }
+        }
+
+        function toggleAddIngredientInputs() {
+            const addIngredientSection = document.getElementById('addIngredientInputs');
+            addIngredientSection.classList.toggle('active');
+            document.getElementById('priceInputs').classList.remove('active');
+            document.getElementById('recipeInputs').classList.remove('active');
+            if (addIngredientSection.classList.contains('active')) {
                 document.getElementById('orderInputs').style.display = 'none';
                 document.getElementById('ingredientInputs').style.display = 'none';
             } else {
@@ -166,6 +278,42 @@
             document.getElementById('priceOnion').value = prices.onion;
             document.getElementById('pricePotato').value = prices.potato;
             document.getElementById('priceVeggies').value = prices.veggies;
+            document.getElementById('priceGarlic').value = prices.garlic;
+            document.getElementById('priceOil').value = prices.oil;
+
+            const customPriceInputs = document.getElementById('customPriceInputs');
+            customPriceInputs.innerHTML = '';
+            prices.customIngredients.forEach(ing => {
+                customPriceInputs.innerHTML += `<label>${ing.name} (per ${ing.unit}): <input type="number" id="price${ing.name}" step="0.01" min="0" value="${ing.price}"></label><br>`;
+            });
+        }
+
+        function loadRecipeInputs() {
+            document.getElementById('recipeCakeFlour').value = recipe.dough.cakeFlour * 1000;
+            document.getElementById('recipeBreadFlour').value = recipe.dough.breadFlour * 1000;
+            document.getElementById('recipeMargarine').value = recipe.dough.margarine * 1000;
+            document.getElementById('recipeWater').value = recipe.dough.water * 1000;
+            document.getElementById('recipeSalt').value = recipe.dough.salt;
+            document.getElementById('recipeBakingPowder').value = recipe.dough.bakingPowder;
+            document.getElementById('recipeCayenne').value = recipe.dough.cayenne;
+            document.getElementById('recipeMilkPowder').value = recipe.dough.milkPowder;
+            document.getElementById('recipeTurmeric').value = recipe.dough.turmeric;
+            document.getElementById('recipeMeatPercent').value = recipe.filling.meatPercent;
+            document.getElementById('recipeAromat').value = recipe.filling.aromat;
+            document.getElementById('recipeBiltongSpice').value = recipe.filling.biltongSpice;
+            document.getElementById('recipeGarlic').value = recipe.filling.garlic * 1000;
+            document.getElementById('recipeOil').value = recipe.filling.oil * 1000;
+
+            const customDoughInputs = document.getElementById('customDoughRecipeInputs');
+            const customFillingInputs = document.getElementById('customFillingRecipeInputs');
+            customDoughInputs.innerHTML = '';
+            customFillingInputs.innerHTML = '';
+            recipe.dough.customIngredients.forEach(ing => {
+                customDoughInputs.innerHTML += `<label>${ing.name} (${ing.unit}): <input type="number" id="recipe${ing.name}" step="0.01" min="0" value="${ing.quantity}"></label><br>`;
+            });
+            recipe.filling.customIngredients.forEach(ing => {
+                customFillingInputs.innerHTML += `<label>${ing.name} (${ing.unit}): <input type="number" id="recipe${ing.name}" step="0.01" min="0" value="${ing.quantity}"></label><br>`;
+            });
         }
 
         function savePrices() {
@@ -181,11 +329,104 @@
                 aromat: parseFloat(document.getElementById('priceAromat').value) || defaultPrices.aromat,
                 onion: parseFloat(document.getElementById('priceOnion').value) || defaultPrices.onion,
                 potato: parseFloat(document.getElementById('pricePotato').value) || defaultPrices.potato,
-                veggies: parseFloat(document.getElementById('priceVeggies').value) || defaultPrices.veggies
+                veggies: parseFloat(document.getElementById('priceVeggies').value) || defaultPrices.veggies,
+                garlic: parseFloat(document.getElementById('priceGarlic').value) || defaultPrices.garlic,
+                oil: parseFloat(document.getElementById('priceOil').value) || defaultPrices.oil,
+                customIngredients: prices.customIngredients.map(ing => ({
+                    name: ing.name,
+                    unit: ing.unit,
+                    price: parseFloat(document.getElementById(`price${ing.name}`).value) || ing.price
+                }))
             };
             localStorage.setItem('empanadaPrices', JSON.stringify(prices));
             alert('Prices saved!');
             togglePriceInputs();
+        }
+
+        function saveRecipe() {
+            const cakeFlour = parseFloat(document.getElementById('recipeCakeFlour').value) / 1000 || defaultRecipe.dough.cakeFlour;
+            const breadFlour = parseFloat(document.getElementById('recipeBreadFlour').value) / 1000 || defaultRecipe.dough.breadFlour;
+            const margarine = parseFloat(document.getElementById('recipeMargarine').value) / 1000 || defaultRecipe.dough.margarine;
+            const water = parseFloat(document.getElementById('recipeWater').value) / 1000 || defaultRecipe.dough.water;
+            const doughCustomTotal = recipe.dough.customIngredients.reduce((sum, ing) => sum + (ing.unit === 'kg' || ing.unit === 'L' ? parseFloat(document.getElementById(`recipe${ing.name}`).value) / 1000 || ing.quantity : 0), 0);
+            const doughTotal = (cakeFlour + breadFlour + margarine + water + doughCustomTotal) * 1000;
+            if (Math.abs(doughTotal - 0.5) > 0.01) {
+                alert('Dough ingredients must total 500g per batch!');
+                return;
+            }
+
+            const meatPercent = parseFloat(document.getElementById('recipeMeatPercent').value) || defaultRecipe.filling.meatPercent;
+            if (meatPercent < 0 || meatPercent > 100) {
+                alert('Meat percentage must be between 0 and 100!');
+                return;
+            }
+            const nonMeatIngredientsCount = 5 + recipe.filling.customIngredients.filter(ing => ing.unit === 'kg' || ing.unit === 'L').length;
+            const nonMeatPerIngredient = (0.040 * (100 - meatPercent) / 100) / nonMeatIngredientsCount; // kg
+
+            recipe = {
+                dough: {
+                    cakeFlour,
+                    breadFlour,
+                    margarine,
+                    water,
+                    salt: parseFloat(document.getElementById('recipeSalt').value) || defaultRecipe.dough.salt,
+                    bakingPowder: parseFloat(document.getElementById('recipeBakingPowder').value) || defaultRecipe.dough.bakingPowder,
+                    cayenne: parseFloat(document.getElementById('recipeCayenne').value) || defaultRecipe.dough.cayenne,
+                    milkPowder: parseFloat(document.getElementById('recipeMilkPowder').value) || defaultRecipe.dough.milkPowder,
+                    turmeric: parseFloat(document.getElementById('recipeTurmeric').value) || defaultRecipe.dough.turmeric,
+                    customIngredients: recipe.dough.customIngredients.map(ing => ({
+                        name: ing.name,
+                        unit: ing.unit,
+                        quantity: parseFloat(document.getElementById(`recipe${ing.name}`).value) || ing.quantity
+                    }))
+                },
+                filling: {
+                    meatPercent,
+                    nonMeatPerIngredient,
+                    aromat: parseFloat(document.getElementById('recipeAromat').value) || defaultRecipe.filling.aromat,
+                    biltongSpice: parseFloat(document.getElementById('recipeBiltongSpice').value) || defaultRecipe.filling.biltongSpice,
+                    garlic: parseFloat(document.getElementById('recipeGarlic').value) / 1000 || defaultRecipe.filling.garlic,
+                    oil: parseFloat(document.getElementById('recipeOil').value) / 1000 || defaultRecipe.filling.oil,
+                    customIngredients: recipe.filling.customIngredients.map(ing => ({
+                        name: ing.name,
+                        unit: ing.unit,
+                        quantity: parseFloat(document.getElementById(`recipe${ing.name}`).value) || ing.quantity
+                    }))
+                }
+            };
+            localStorage.setItem('empanadaRecipe', JSON.stringify(recipe));
+            alert('Recipe saved!');
+            toggleRecipeInputs();
+            loadRecipeInputs();
+        }
+
+        function addIngredient() {
+            const name = document.getElementById('newIngredientName').value.trim();
+            const unit = document.getElementById('newIngredientUnit').value;
+            const quantity = parseFloat(document.getElementById('newIngredientQuantity').value) || 0;
+            const price = parseFloat(document.getElementById('newIngredientPrice').value) || 0;
+            const type = document.getElementById('newIngredientType').value;
+
+            if (!name || quantity <= 0 || price <= 0) {
+                alert('Please provide a valid name, quantity, and price!');
+                return;
+            }
+
+            const ingredient = { name, unit, quantity: unit === 'kg' || unit === 'L' ? quantity / 1000 : quantity, price };
+            if (type === 'dough') {
+                recipe.dough.customIngredients.push({ name, unit, quantity });
+                prices.customIngredients.push({ name, unit, price });
+            } else {
+                recipe.filling.customIngredients.push({ name, unit, quantity });
+                prices.customIngredients.push({ name, unit, price });
+            }
+
+            localStorage.setItem('empanadaRecipe', JSON.stringify(recipe));
+            localStorage.setItem('empanadaPrices', JSON.stringify(prices));
+            alert('Ingredient added!');
+            toggleAddIngredientInputs();
+            loadPriceInputs();
+            loadRecipeInputs();
         }
 
         function calculate() {
@@ -199,7 +440,8 @@
             } else {
                 const weight = parseFloat(document.getElementById('ingredientWeight').value) || 0;
                 const type = document.getElementById('ingredientType').value;
-                const empanadas = Math.floor(weight / 0.024);
+                const meatPerEmpanada = 0.040 * recipe.filling.meatPercent / 100; // kg
+                const empanadas = Math.floor(weight / meatPerEmpanada);
                 batches = Math.ceil(empanadas / 7);
                 if (type === 'beef') beef = empanadas;
                 else chicken = empanadas;
@@ -209,20 +451,29 @@
 
             // Dough calculations
             const batchSize = 7;
-            const cakeFlour = batches * 0.1875; // kg
-            const breadFlour = batches * 0.125; // kg
-            const margarine = batches * 0.125; // kg
-            const water = batches * 0.1875; // liters
+            const cakeFlour = batches * recipe.dough.cakeFlour; // kg
+            const breadFlour = batches * recipe.dough.breadFlour; // kg
+            const margarine = batches * recipe.dough.margarine; // kg
+            const water = batches * recipe.dough.water; // liters
+            const doughCustom = recipe.dough.customIngredients.reduce((acc, ing) => {
+                acc[ing.name] = batches * ing.quantity;
+                return acc;
+            }, {});
 
             // Filling calculations
             const fillingPerEmpanada = 0.040; // kg
-            const meatPerEmpanada = 0.024; // kg (60%)
-            const nonMeatPerEmpanada = 0.016; // kg (40%)
-            const onionPerEmpanada = nonMeatPerEmpanada / 3; // 5.33g
-            const potatoPerEmpanada = nonMeatPerEmpanada / 3;
-            const veggiesPerEmpanada = nonMeatPerEmpanada / 3;
-            const aromatPerEmpanada = 0.12; // tbsp (1 tbsp per 200g chicken)
-            const biltongSpicePerEmpanada = 0.096; // tbsp (1 tbsp per 250g beef)
+            const meatPerEmpanada = fillingPerEmpanada * recipe.filling.meatPercent / 100; // kg
+            const onionPerEmpanada = recipe.filling.nonMeatPerIngredient; // kg
+            const potatoPerEmpanada = recipe.filling.nonMeatPerIngredient;
+            const veggiesPerEmpanada = recipe.filling.nonMeatPerIngredient;
+            const garlicPerEmpanada = recipe.filling.garlic;
+            const oilPerEmpanada = recipe.filling.oil;
+            const aromatPerEmpanada = recipe.filling.aromat; // tbsp
+            const biltongSpicePerEmpanada = recipe.filling.biltongSpice; // tbsp
+            const fillingCustom = recipe.filling.customIngredients.reduce((acc, ing) => {
+                acc[ing.name] = totalEmpanadas * ing.quantity;
+                return acc;
+            }, {});
 
             // Beef pot
             const beefFilling = beef * fillingPerEmpanada;
@@ -231,6 +482,12 @@
             const beefOnion = beef * onionPerEmpanada;
             const beefPotato = beef * potatoPerEmpanada;
             const beefVeggies = beef * veggiesPerEmpanada;
+            const beefGarlic = beef * garlicPerEmpanada;
+            const beefOil = beef * oilPerEmpanada;
+            const beefCustom = recipe.filling.customIngredients.reduce((acc, ing) => {
+                acc[ing.name] = beef * ing.quantity;
+                return acc;
+            }, {});
 
             // Chicken pot
             const chickenFilling = chicken * fillingPerEmpanada;
@@ -239,6 +496,12 @@
             const chickenOnion = chicken * onionPerEmpanada;
             const chickenPotato = chicken * potatoPerEmpanada;
             const chickenVeggies = chicken * veggiesPerEmpanada;
+            const chickenGarlic = chicken * garlicPerEmpanada;
+            const chickenOil = chicken * oilPerEmpanada;
+            const chickenCustom = recipe.filling.customIngredients.reduce((acc, ing) => {
+                acc[ing.name] = chicken * ing.quantity;
+                return acc;
+            }, {});
 
             // Cost calculations
             const costCakeFlour = cakeFlour * prices.cakeFlour;
@@ -246,23 +509,72 @@
             const costMargarine = margarine * prices.margarine;
             const costWater = water * prices.water;
             const costSpices = batches * prices.spices;
-            const doughCost = costCakeFlour + costBreadFlour + costMargarine + costWater + costSpices;
+            const costDoughCustom = recipe.dough.customIngredients.reduce((sum, ing) => {
+                const price = prices.customIngredients.find(p => p.name === ing.name)?.price || 0;
+                return sum + (batches * ing.quantity * price);
+            }, 0);
+            const doughCost = costCakeFlour + costBreadFlour + costMargarine + costWater + costSpices + costDoughCustom;
 
             const costBeef = beefMeat * prices.beef;
             const costBeefBiltongSpice = beefBiltongSpice * prices.biltongSpice;
             const costBeefOnion = beefOnion * prices.onion;
             const costBeefPotato = beefPotato * prices.potato;
             const costBeefVeggies = beefVeggies * prices.veggies;
-            const beefCost = costBeef + costBeefBiltongSpice + costBeefOnion + costBeefPotato + costBeefVeggies;
+            const costBeefGarlic = beefGarlic * prices.garlic;
+            const costBeefOil = beefOil * prices.oil;
+            const costBeefCustom = recipe.filling.customIngredients.reduce((sum, ing) => {
+                const price = prices.customIngredients.find(p => p.name === ing.name)?.price || 0;
+                return sum + (beef * ing.quantity * price);
+            }, 0);
+            const beefCost = costBeef + costBeefBiltongSpice + costBeefOnion + costBeefPotato + costBeefVeggies + costBeefGarlic + costBeefOil + costBeefCustom;
 
             const costChicken = chickenMeat * prices.chicken;
             const costChickenAromat = chickenAromat * prices.aromat;
             const costChickenOnion = chickenOnion * prices.onion;
             const costChickenPotato = chickenPotato * prices.potato;
             const costChickenVeggies = chickenVeggies * prices.veggies;
-            const chickenCost = costChicken + costChickenAromat + costChickenOnion + costChickenPotato + costChickenVeggies;
+            const costChickenGarlic = chickenGarlic * prices.garlic;
+            const costChickenOil = chickenOil * prices.oil;
+            const costChickenCustom = recipe.filling.customIngredients.reduce((sum, ing) => {
+                const price = prices.customIngredients.find(p => p.name === ing.name)?.price || 0;
+                return sum + (chicken * ing.quantity * price);
+            }, 0);
+            const chickenCost = costChicken + costChickenAromat + costChickenOnion + costChickenPotato + costChickenVeggies + costChickenGarlic + costChickenOil + costChickenCustom;
 
             const totalCost = doughCost + beefCost + chickenCost;
+
+            // Labor calculations
+            const empanadasPerPot = Math.floor(3 / fillingPerEmpanada); // 3L pot, assuming 1L ≈ 1kg
+            const potsNeeded = Math.ceil(totalEmpanadas / empanadasPerPot);
+            const fillingPrepTime = potsNeeded <= 2 ? 2 : Math.ceil(potsNeeded / 2) * 2; // 2 hours per pot, max 2 simultaneous
+            const fillingCoolTime = potsNeeded <= 2 ? 3 : Math.ceil(potsNeeded / 2) * 3; // 3 hours cooling
+            const doughMakeTime = batches * 0.167; // 10 min per batch
+            const doughCoolTime = batches * 0.5; // 30 min per batch
+            const doughRollTime = batches * 0.167; // 10 min per batch
+            const doughRollCoolTime = batches * 0.167; // 10 min per batch
+            const assemblyTime = batches * 0.167; // 10 min per batch
+            const freezeCycles = Math.ceil(totalEmpanadas / 32); // 32 empanadas per cycle
+            const freezeTime = freezeCycles * 3; // 3 hours per cycle
+            const packagingTime = batches * 0.083; // 5 min per batch
+
+            const totalActiveTime = fillingPrepTime + doughMakeTime + doughRollTime + assemblyTime + packagingTime;
+            const totalPassiveTime = fillingCoolTime + doughCoolTime + doughRollCoolTime + freezeTime;
+
+            // Sales packs
+            const packsOfSix = Math.floor(totalEmpanadas / 6);
+            const extras = totalEmpanadas % 6;
+
+            // Schedule
+            let schedule = '';
+            const maxEmpanadas = 128; // Based on freezer and time constraints
+            if (totalEmpanadas > maxEmpanadas) {
+                schedule += `<p class="warning">Warning: Order exceeds max weekly capacity of ${maxEmpanadas} empanadas. Adjust order or extend freezer time.</p>`;
+            }
+            schedule += `<h3>Weekly Schedule (Tue–Fri, 08:00–13:00)</h3>`;
+            schedule += `<p><strong>Tuesday (Dough Prep):</strong> Make ${batches} batches (${doughMakeTime.toFixed(2)} hours active, ${doughCoolTime.toFixed(2)} hours cooling).</p>`;
+            schedule += `<p><strong>Wednesday (Dough Roll):</strong> Roll ${batches} batches (${doughRollTime.toFixed(2)} hours active, ${doughRollCoolTime.toFixed(2)} hours cooling). Evening: Cook ${potsNeeded} pots (${fillingPrepTime.toFixed(2)} hours, cool overnight).</p>`;
+            schedule += `<p><strong>Thursday (Assembly):</strong> Assemble ${batches} batches (${assemblyTime.toFixed(2)} hours). Start freezing ${Math.min(4, freezeCycles)} cycles post-13:00.</p>`;
+            schedule += `<p><strong>Friday (Freeze & Package):</strong> Freeze ${Math.min(8, freezeCycles)} batches (${(Math.min(8, freezeCycles) * 3).toFixed(2)} hours), package ${batches} batches (${packagingTime.toFixed(2)} hours). Deliver ${packsOfSix} packs + ${extras} extras.</p>`;
 
             // Results
             let result = `<h2>Results for ${beef} Beef + ${chicken} Chicken Empanadas</h2>`;
@@ -273,28 +585,34 @@
             result += `<h3>Dough Requirements (${batches} batches):</h3>`;
             result += `<p><strong>Per Batch (7 empanadas):</strong></p>`;
             result += `<ul>
-                <li>Cake Flour: 0.1875 kg</li>
-                <li>Bread Flour: 0.125 kg</li>
-                <li>Margarine: 0.125 kg</li>
-                <li>Water: 0.1875 L</li>
-                <li>Salt: 0.94 tsp</li>
-                <li>Baking Powder: 0.31 tsp</li>
-                <li>Cayenne Pepper: 0.63 tsp</li>
-                <li>Milk Powder: 1.25 tsp</li>
-                <li>Turmeric: 0.63 tsp</li>
-            </ul>`;
+                <li>Cake Flour: ${recipe.dough.cakeFlour.toFixed(4)} kg</li>
+                <li>Bread Flour: ${recipe.dough.breadFlour.toFixed(4)} kg</li>
+                <li>Margarine: ${recipe.dough.margarine.toFixed(4)} kg</li>
+                <li>Water: ${recipe.dough.water.toFixed(4)} L</li>
+                <li>Salt: ${recipe.dough.salt.toFixed(2)} tsp</li>
+                <li>Baking Powder: ${recipe.dough.bakingPowder.toFixed(2)} tsp</li>
+                <li>Cayenne Pepper: ${recipe.dough.cayenne.toFixed(2)} tsp</li>
+                <li>Milk Powder: ${recipe.dough.milkPowder.toFixed(2)} tsp</li>
+                <li>Turmeric: ${recipe.dough.turmeric.toFixed(2)} tsp</li>`;
+            recipe.dough.customIngredients.forEach(ing => {
+                result += `<li>${ing.name}: ${ing.quantity.toFixed(4)} ${ing.unit}</li>`;
+            });
+            result += `</ul>`;
             result += `<p><strong>Total Shopping List:</strong></p>`;
             result += `<ul>
                 <li>Cake Flour: ${cakeFlour.toFixed(2)} kg</li>
                 <li>Bread Flour: ${breadFlour.toFixed(2)} kg</li>
                 <li>Margarine: ${margarine.toFixed(2)} kg</li>
                 <li>Water: ${water.toFixed(2)} L</li>
-                <li>Salt: ${(batches * 0.9375).toFixed(2)} tsp</li>
-                <li>Baking Powder: ${(batches * 0.3125).toFixed(2)} tsp</li>
-                <li>Cayenne Pepper: ${(batches * 0.625).toFixed(2)} tsp</li>
-                <li>Milk Powder: ${(batches * 1.25).toFixed(2)} tsp</li>
-                <li>Turmeric: ${(batches * 0.625).toFixed(2)} tsp</li>
-            </ul>`;
+                <li>Salt: ${(batches * recipe.dough.salt).toFixed(2)} tsp</li>
+                <li>Baking Powder: ${(batches * recipe.dough.bakingPowder).toFixed(2)} tsp</li>
+                <li>Cayenne Pepper: ${(batches * recipe.dough.cayenne).toFixed(2)} tsp</li>
+                <li>Milk Powder: ${(batches * recipe.dough.milkPowder).toFixed(2)} tsp</li>
+                <li>Turmeric: ${(batches * recipe.dough.turmeric).toFixed(2)} tsp</li>`;
+            recipe.dough.customIngredients.forEach(ing => {
+                result += `<li>${ing.name}: ${(batches * ing.quantity).toFixed(2)} ${ing.unit}</li>`;
+            });
+            result += `</ul>`;
 
             if (beef > 0) {
                 result += `<h3>Beef Pot:</h3>`;
@@ -304,7 +622,12 @@
                     <li>Onion: ${beefOnion.toFixed(2)} kg</li>
                     <li>Potato: ${beefPotato.toFixed(2)} kg</li>
                     <li>Mixed Veggies: ${beefVeggies.toFixed(2)} kg</li>
-                </ul>`;
+                    <li>Garlic: ${beefGarlic.toFixed(2)} kg</li>
+                    <li>Oil: ${beefOil.toFixed(2)} kg</li>`;
+                recipe.filling.customIngredients.forEach(ing => {
+                    result += `<li>${ing.name}: ${(beef * ing.quantity).toFixed(2)} ${ing.unit}</li>`;
+                });
+                result += `</ul>`;
             }
 
             if (chicken > 0) {
@@ -315,7 +638,12 @@
                     <li>Onion: ${chickenOnion.toFixed(2)} kg</li>
                     <li>Potato: ${chickenPotato.toFixed(2)} kg</li>
                     <li>Mixed Veggies: ${chickenVeggies.toFixed(2)} kg</li>
-                </ul>`;
+                    <li>Garlic: ${chickenGarlic.toFixed(2)} kg</li>
+                    <li>Oil: ${chickenOil.toFixed(2)} kg</li>`;
+                recipe.filling.customIngredients.forEach(ing => {
+                    result += `<li>${ing.name}: ${(chicken * ing.quantity).toFixed(2)} ${ing.unit}</li>`;
+                });
+                result += `</ul>`;
             }
 
             result += `<h3>Estimated Costs (ZAR):</h3>`;
@@ -326,26 +654,63 @@
                     <li>Bread Flour: R${costBreadFlour.toFixed(2)} (R${prices.breadFlour}/kg)</li>
                     <li>Margarine: R${costMargarine.toFixed(2)} (R${prices.margarine}/kg)</li>
                     <li>Water: R${costWater.toFixed(2)} (R${prices.water}/L)</li>
-                    <li>Spices: R${costSpices.toFixed(2)} (R${prices.spices}/batch)</li>
-                </ul>
-                ${beef > 0 ? `<li>Beef Filling: R${beefCost.toFixed(2)}</li>
+                    <li>Spices: R${costSpices.toFixed(2)} (R${prices.spices}/batch)</li>`;
+            recipe.dough.customIngredients.forEach(ing => {
+                const price = prices.customIngredients.find(p => p.name === ing.name)?.price || 0;
+                result += `<li>${ing.name}: R${(batches * ing.quantity * price).toFixed(2)} (R${price}/${ing.unit})</li>`;
+            });
+            result += `</ul>`;
+            if (beef > 0) {
+                result += `<li>Beef Filling: R${beefCost.toFixed(2)}</li>
                 <ul>
                     <li>Beef Mince: R${costBeef.toFixed(2)} (R${prices.beef}/kg)</li>
                     <li>Biltong Spice: R${costBeefBiltongSpice.toFixed(2)} (R${prices.biltongSpice}/tbsp)</li>
                     <li>Onion: R${costBeefOnion.toFixed(2)} (R${prices.onion}/kg)</li>
                     <li>Potato: R${costBeefPotato.toFixed(2)} (R${prices.potato}/kg)</li>
                     <li>Mixed Veggies: R${costBeefVeggies.toFixed(2)} (R${prices.veggies}/kg)</li>
-                </ul>` : ''}
-                ${chicken > 0 ? `<li>Chicken Filling: R${chickenCost.toFixed(2)}</li>
+                    <li>Garlic: R${costBeefGarlic.toFixed(2)} (R${prices.garlic}/kg)</li>
+                    <li>Oil: R${costBeefOil.toFixed(2)} (R${prices.oil}/L)</li>`;
+                recipe.filling.customIngredients.forEach(ing => {
+                    const price = prices.customIngredients.find(p => p.name === ing.name)?.price || 0;
+                    result += `<li>${ing.name}: R${(beef * ing.quantity * price).toFixed(2)} (R${price}/${ing.unit})</li>`;
+                });
+                result += `</ul>`;
+            }
+            if (chicken > 0) {
+                result += `<li>Chicken Filling: R${chickenCost.toFixed(2)}</li>
                 <ul>
                     <li>Chicken Mince: R${costChicken.toFixed(2)} (R${prices.chicken}/kg)</li>
                     <li>Aromat: R${costChickenAromat.toFixed(2)} (R${prices.aromat}/tbsp)</li>
                     <li>Onion: R${costChickenOnion.toFixed(2)} (R${prices.onion}/kg)</li>
                     <li>Potato: R${costChickenPotato.toFixed(2)} (R${prices.potato}/kg)</li>
                     <li>Mixed Veggies: R${costChickenVeggies.toFixed(2)} (R${prices.veggies}/kg)</li>
-                </ul>` : ''}
-                <li><strong>Total Cost: R${totalCost.toFixed(2)}</strong></li>
+                    <li>Garlic: R${costChickenGarlic.toFixed(2)} (R${prices.garlic}/kg)</li>
+                    <li>Oil: R${costChickenOil.toFixed(2)} (R${prices.oil}/L)</li>`;
+                recipe.filling.customIngredients.forEach(ing => {
+                    const price = prices.customIngredients.find(p => p.name === ing.name)?.price || 0;
+                    result += `<li>${ing.name}: R${(chicken * ing.quantity * price).toFixed(2)} (R${price}/${ing.unit})</li>`;
+                });
+                result += `</ul>`;
+            }
+            result += `<li><strong>Total Cost: R${totalCost.toFixed(2)}</strong></li>
             </ul>`;
+
+            result += `<h3>Labor Requirements:</h3>`;
+            result += `<p><strong>Total Active Time: ${totalActiveTime.toFixed(2)} hours</strong></p>`;
+            result += `<p><strong>Total Passive Time: ${totalPassiveTime.toFixed(2)} hours</strong></p>`;
+            result += `<ul>
+                <li>Filling Prep: ${fillingPrepTime.toFixed(2)} hours (${potsNeeded} pots)</li>
+                <li>Filling Cooling: ${fillingCoolTime.toFixed(2)} hours</li>
+                <li>Dough Making: ${doughMakeTime.toFixed(2)} hours (${batches} batches)</li>
+                <li>Dough Cooling: ${doughCoolTime.toFixed(2)} hours</li>
+                <li>Dough Rolling: ${doughRollTime.toFixed(2)} hours</li>
+                <li>Dough Roll Cooling: ${doughRollCoolTime.toFixed(2)} hours</li>
+                <li>Assembly: ${assemblyTime.toFixed(2)} hours</li>
+                <li>Freezing: ${freezeTime.toFixed(2)} hours (${freezeCycles} cycles)</li>
+                <li>Packaging: ${packagingTime.toFixed(2)} hours</li>
+            </ul>`;
+            result += `<p><strong>Sales Output:</strong> ${packsOfSix} packs of 6 + ${extras} extras for home use</p>`;
+            result += schedule;
 
             document.getElementById('results').innerHTML = result;
         }
