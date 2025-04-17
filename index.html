@@ -87,8 +87,8 @@
         <div id="ingredientInputs">
             <label>Ingredient: 
                 <select id="ingredientType">
-                    <option value="chicken">Chicken</option>
-                    <option value="beef">Beef</option>
+                    <option value="chicken">Chicken Mince</option>
+                    <option value="beef">Beef Mince</option>
                 </select>
             </label><br>
             <label>Weight (kg): <input type="number" id="ingredientWeight" min="0" step="0.01" value="0"></label><br>
@@ -102,9 +102,11 @@
         <label>Bread Flour (per kg): <input type="number" id="priceBreadFlour" step="0.01" min="0"></label><br>
         <label>Margarine (per kg): <input type="number" id="priceMargarine" step="0.01" min="0"></label><br>
         <label>Water (per L): <input type="number" id="priceWater" step="0.01" min="0"></label><br>
-        <label>Spices (per batch): <input type="number" id="priceSpices" step="0.01" min="0"></label><br>
-        <label>Beef (per kg): <input type="number" id="priceBeef" step="0.01" min="0"></label><br>
-        <label>Chicken (per kg): <input type="number" id="priceChicken" step="0.01" min="0"></label><br>
+        <label>Dough Spices (per batch): <input type="number" id="priceSpices" step="0.01" min="0"></label><br>
+        <label>Beef Mince (per kg): <input type="number" id="priceBeef" step="0.01" min="0"></label><br>
+        <label>Biltong Spice (per tbsp): <input type="number" id="priceBiltongSpice" step="0.01" min="0"></label><br>
+        <label>Chicken Mince (per kg): <input type="number" id="priceChicken" step="0.01" min="0"></label><br>
+        <label>Aromat (per tbsp): <input type="number" id="priceAromat" step="0.01" min="0"></label><br>
         <label>Onion (per kg): <input type="number" id="priceOnion" step="0.01" min="0"></label><br>
         <label>Potato (per kg): <input type="number" id="pricePotato" step="0.01" min="0"></label><br>
         <label>Mixed Veggies (per kg): <input type="number" id="priceVeggies" step="0.01" min="0"></label><br>
@@ -121,7 +123,9 @@
             water: 0.02,
             spices: 1,
             beef: 120,
+            biltongSpice: 1,
             chicken: 70,
+            aromat: 1,
             onion: 15,
             potato: 18,
             veggies: 25
@@ -131,7 +135,7 @@
         let prices = JSON.parse(localStorage.getItem('empanadaPrices')) || { ...defaultPrices };
         loadPriceInputs();
 
-        function toggleInputs() {
+        Gasssfunction toggleInputs() {
             const mode = document.getElementById('mode').value;
             document.getElementById('orderInputs').style.display = mode === 'order' ? 'block' : 'none';
             document.getElementById('ingredientInputs').style.display = mode === 'ingredient' ? 'block' : 'none';
@@ -156,7 +160,9 @@
             document.getElementById('priceWater').value = prices.water;
             document.getElementById('priceSpices').value = prices.spices;
             document.getElementById('priceBeef').value = prices.beef;
+            document.getElementById('priceBiltongSpice').value = prices.biltongSpice;
             document.getElementById('priceChicken').value = prices.chicken;
+            document.getElementById('priceAromat').value = prices.aromat;
             document.getElementById('priceOnion').value = prices.onion;
             document.getElementById('pricePotato').value = prices.potato;
             document.getElementById('priceVeggies').value = prices.veggies;
@@ -170,7 +176,9 @@
                 water: parseFloat(document.getElementById('priceWater').value) || defaultPrices.water,
                 spices: parseFloat(document.getElementById('priceSpices').value) || defaultPrices.spices,
                 beef: parseFloat(document.getElementById('priceBeef').value) || defaultPrices.beef,
+                biltongSpice: parseFloat(document.getElementById('priceBiltongSpice').value) || defaultPrices.biltongSpice,
                 chicken: parseFloat(document.getElementById('priceChicken').value) || defaultPrices.chicken,
+                aromat: parseFloat(document.getElementById('priceAromat').value) || defaultPrices.aromat,
                 onion: parseFloat(document.getElementById('priceOnion').value) || defaultPrices.onion,
                 potato: parseFloat(document.getElementById('pricePotato').value) || defaultPrices.potato,
                 veggies: parseFloat(document.getElementById('priceVeggies').value) || defaultPrices.veggies
@@ -210,24 +218,29 @@
             const fillingPerEmpanada = 0.040; // kg
             const meatPerEmpanada = 0.024; // kg (60%)
             const nonMeatPerEmpanada = 0.016; // kg (40%)
-            const potatoPerEmpanada = nonMeatPerEmpanada * 0.3; // 4.8g
-            const onionPer400gMeat = 0.150; // kg
+            const onionPerEmpanada = nonMeatPerEmpanada / 3; // 5.33g
+            const potatoPerEmpanada = nonMeatPerEmpanada / 3;
+            const veggiesPerEmpanada = nonMeatPerEmpanada / 3;
+            const aromatPerEmpanada = 0.12; // tbsp (1 tbsp per 200g chicken)
+            const biltongSpicePerEmpanada = 0.096; // tbsp (1 tbsp per 250g beef)
 
             // Beef pot
             const beefFilling = beef * fillingPerEmpanada;
             const beefMeat = beef * meatPerEmpanada;
-            const beefOnion = (beefMeat / 0.4) * onionPer400gMeat;
+            const beefBiltongSpice = beef * biltongSpicePerEmpanada;
+            const beefOnion = beef * onionPerEmpanada;
             const beefPotato = beef * potatoPerEmpanada;
-            const beefVeggies = beefFilling - beefMeat - beefOnion - beefPotato;
+            const beefVeggies = beef * veggiesPerEmpanada;
 
             // Chicken pot
             const chickenFilling = chicken * fillingPerEmpanada;
             const chickenMeat = chicken * meatPerEmpanada;
-            const chickenOnion = (chickenMeat / 0.4) * onionPer400gMeat;
+            const chickenAromat = chicken * aromatPerEmpanada;
+            const chickenOnion = chicken * onionPerEmpanada;
             const chickenPotato = chicken * potatoPerEmpanada;
-            const chickenVeggies = chickenFilling - chickenMeat - chickenOnion - chickenPotato;
+            const chickenVeggies = chicken * veggiesPerEmpanada;
 
-            // Cost calculations using custom prices
+            // Cost calculations
             const costCakeFlour = cakeFlour * prices.cakeFlour;
             const costBreadFlour = breadFlour * prices.breadFlour;
             const costMargarine = margarine * prices.margarine;
@@ -236,16 +249,18 @@
             const doughCost = costCakeFlour + costBreadFlour + costMargarine + costWater + costSpices;
 
             const costBeef = beefMeat * prices.beef;
+            const costBeefBiltongSpice = beefBiltongSpice * prices.biltongSpice;
             const costBeefOnion = beefOnion * prices.onion;
             const costBeefPotato = beefPotato * prices.potato;
             const costBeefVeggies = beefVeggies * prices.veggies;
-            const beefCost = costBeef + costBeefOnion + costBeefPotato + costBeefVeggies;
+            const beefCost = costBeef + costBeefBiltongSpice + costBeefOnion + costBeefPotato + costBeefVeggies;
 
             const costChicken = chickenMeat * prices.chicken;
+            const costChickenAromat = chickenAromat * prices.aromat;
             const costChickenOnion = chickenOnion * prices.onion;
             const costChickenPotato = chickenPotato * prices.potato;
             const costChickenVeggies = chickenVeggies * prices.veggies;
-            const chickenCost = costChicken + costChickenOnion + costChickenPotato + costChickenVeggies;
+            const chickenCost = costChicken + costChickenAromat + costChickenOnion + costChickenPotato + costChickenVeggies;
 
             const totalCost = doughCost + beefCost + chickenCost;
 
@@ -284,7 +299,8 @@
             if (beef > 0) {
                 result += `<h3>Beef Pot:</h3>`;
                 result += `<ul>
-                    <li>Beef: ${beefMeat.toFixed(2)} kg</li>
+                    <li>Beef Mince: ${beefMeat.toFixed(2)} kg</li>
+                    <li>Biltong Spice: ${beefBiltongSpice.toFixed(2)} tbsp</li>
                     <li>Onion: ${beefOnion.toFixed(2)} kg</li>
                     <li>Potato: ${beefPotato.toFixed(2)} kg</li>
                     <li>Mixed Veggies: ${beefVeggies.toFixed(2)} kg</li>
@@ -294,7 +310,8 @@
             if (chicken > 0) {
                 result += `<h3>Chicken Pot:</h3>`;
                 result += `<ul>
-                    <li>Chicken: ${chickenMeat.toFixed(2)} kg</li>
+                    <li>Chicken Mince: ${chickenMeat.toFixed(2)} kg</li>
+                    <li>Aromat: ${chickenAromat.toFixed(2)} tbsp</li>
                     <li>Onion: ${chickenOnion.toFixed(2)} kg</li>
                     <li>Potato: ${chickenPotato.toFixed(2)} kg</li>
                     <li>Mixed Veggies: ${chickenVeggies.toFixed(2)} kg</li>
@@ -313,14 +330,16 @@
                 </ul>
                 ${beef > 0 ? `<li>Beef Filling: R${beefCost.toFixed(2)}</li>
                 <ul>
-                    <li>Beef: R${costBeef.toFixed(2)} (R${prices.beef}/kg)</li>
+                    <li>Beef Mince: R${costBeef.toFixed(2)} (R${prices.beef}/kg)</li>
+                    <li>Biltong Spice: R${costBeefBiltongSpice.toFixed(2)} (R${prices.biltongSpice}/tbsp)</li>
                     <li>Onion: R${costBeefOnion.toFixed(2)} (R${prices.onion}/kg)</li>
                     <li>Potato: R${costBeefPotato.toFixed(2)} (R${prices.potato}/kg)</li>
                     <li>Mixed Veggies: R${costBeefVeggies.toFixed(2)} (R${prices.veggies}/kg)</li>
                 </ul>` : ''}
                 ${chicken > 0 ? `<li>Chicken Filling: R${chickenCost.toFixed(2)}</li>
                 <ul>
-                    <li>Chicken: R${costChicken.toFixed(2)} (R${prices.chicken}/kg)</li>
+                    <li>Chicken Mince: R${costChicken.toFixed(2)} (R${prices.chicken}/kg)</li>
+                    <li>Aromat: R${costChickenAromat.toFixed(2)} (R${prices.aromat}/tbsp)</li>
                     <li>Onion: R${costChickenOnion.toFixed(2)} (R${prices.onion}/kg)</li>
                     <li>Potato: R${costChickenPotato.toFixed(2)} (R${prices.potato}/kg)</li>
                     <li>Mixed Veggies: R${costChickenVeggies.toFixed(2)} (R${prices.veggies}/kg)</li>
