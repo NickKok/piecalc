@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Empanada Workflow Planner</title>
   <style>
-    /* Reuse your existing styles */
     :root { --primary: #FF6B35; --secondary: #004E89; --accent: #FFBE0B; }
     body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
     .container { max-width: 900px; margin: 0 auto; }
@@ -15,7 +14,7 @@
     label { display: block; font-weight: bold; color: var(--secondary); }
     input, select { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; }
     
-    /* Workflow-specific styles */
+    /* Workflow styles */
     .timeline { margin-top: 30px; }
     .day-card { 
       background: white; 
@@ -29,6 +28,19 @@
       justify-content: space-between;
       padding: 8px 0;
       border-bottom: 1px dashed #eee;
+    }
+    .day-total {
+      font-weight: bold;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 2px solid var(--accent);
+    }
+    .order-total {
+      background: var(--secondary);
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -50,16 +62,11 @@
         <input type="date" id="deliveryDate" min="">
       </div>
       
-      <div class="input-group">
-        <label>
-          <input type="checkbox" id="needsDelivery"> Include 1-hour delivery time
-        </label>
-      </div>
-      
       <button id="generateWorkflow">Generate Workflow</button>
     </div>
 
     <div class="timeline" id="timeline"></div>
+    <div class="order-total" id="orderTotal"></div>
   </div>
 
   <script>
@@ -69,17 +76,16 @@
     document.getElementById('generateWorkflow').addEventListener('click', function() {
       const pies = parseInt(document.getElementById('pieQuantity').value);
       const deliveryDate = new Date(document.getElementById('deliveryDate').value);
-      const needsDelivery = document.getElementById('needsDelivery').checked;
       
       if (isNaN(pies) || pies < 12) {
         alert("Minimum order is 12 empanadas");
         return;
       }
 
-      generateWorkflow(pies, deliveryDate, needsDelivery);
+      generateWorkflow(pies, deliveryDate);
     });
 
-    function generateWorkflow(pies, deliveryDate, needsDelivery) {
+    function generateWorkflow(pies, deliveryDate) {
       const timeline = document.getElementById('timeline');
       timeline.innerHTML = '';
       
@@ -87,57 +93,108 @@
       const fillingBatches = Math.ceil(pies / 36); // 1kg meat batches (36 pies)
       const doughBatches = Math.ceil(pies / 12);  // Standard dough batches
       
-      // Time estimates (hours)
+      // Time estimates (in hours)
       const PREP_TIME = 0.5; // Ingredient check
-      const FILLING_TIME = 1 * fillingBatches;
-      const DOUGH_TIME = (20/60) * doughBatches;
-      const ASSEMBLY_TIME = (20/60) * (pies/12);
-      const DELIVERY_TIME = needsDelivery ? 1 : 0;
+      const FILLING_TIME_PER_BATCH = 1;
+      const DOUGH_TIME_PER_BATCH = 20/60;
+      const ASSEMBLY_TIME_PER_BATCH = 20/60;
+      const CLEANUP_TIME = 0.5;
       
-      // Generate workflow days (starting from delivery day backwards)
+      // Generate workflow
       const workflowDays = [];
       let remainingPies = pies;
       let currentDate = new Date(deliveryDate);
+      let totalActiveHours = 0;
       
-      // Deduct delivery day if needed
-      if (needsDelivery) {
-        workflowDays.push({
-          date: new Date(currentDate),
-          tasks: ["Delivery (1 hour)"]
-        });
-        currentDate.setDate(currentDate.getDate() - 1);
-      }
+      // Assembly Days (work backwards from delivery date)
+      const maxPiesPerDay = 72;
+      const assemblyDays = Math.ceil(pies / maxPiesPerDay);
       
-      // Assembly Days (last step before delivery)
-      const assemblyDays = Math.ceil(remainingPies / 72); // 72 pies/day max
       for (let i = 0; i < assemblyDays; i++) {
-        const piesToday = Math.min(remainingPies, 72);
-        workflowDays.push({
+        const piesToday = Math.min(remainingPies, maxPiesPerDay);
+        const batchesToday = piesToday / 12;
+        const assemblyTime = batchesToday * ASSEMBLY_TIME_PER_BATCH;
+        
+        workflowDays.unshift({
           date: new Date(currentDate),
           tasks: [
-            `Assemble ${piesToday} pies (${Math.round((piesToday/12)*20)}min)`,
-            "30min cleanup",
-            `Freeze ${piesToday} pies (passive 5hrs)`
-          ]
+            `Assemble ${piesToday} pies (${formatTime(assemblyTime)}`,
+            `${formatTime(CLEANUP_TIME)} cleanup`,
+            `Freeze ${piesToday} pies (passive)`
+          ],
+          activeHours: assemblyTime + CLEANUP_TIME
         });
+        
         remainingPies -= piesToday;
         currentDate.setDate(currentDate.getDate() - 1);
       }
       
       // Prep Days (filling + dough)
-      workflowDays.push({
-        date: new Date(currentDate),
-        tasks: [
-          "30min ingredient check",
-          `Make ${fillingBatches} filling batches (${fillingBatches}hr)`,
-          `Make ${doughBatches} dough batches (${Math.round(doughBatches*20)}min)`,
-          "30min cleanup",
-          "30min dough chilling (passive)"
-        ]
-      });
+      let prepDays = [];
+      let remainingFillingBatches = fillingBatches;
+      let remainingDoughBatches = doughBatches;
+      
+      while (remainingFillingBatches > 0 || remainingDoughBatches > 0) {
+        let dayTasks = [];
+        let dayActiveHours = 0;
+        
+        // Weekend check (max 6hrs/day)
+        const isWeekend = [0, 6].includes(currentDate.getDay());
+        const maxHours = isWeekend ? 6 : 3;
+        
+        // Add ingredient check if first prep day
+        if (prepDays.length === 0) {
+          dayTasks.push(`${formatTime(PREP_TIME)} ingredient check`);
+          dayActiveHours += PREP_TIME;
+        }
+        
+        // Add filling batches (max 4hrs to leave room for dough)
+        const fillingBatchesToday = Math.min(
+          remainingFillingBatches,
+          Math.floor((maxHours - dayActiveHours - 1) / FILLING_TIME_PER_BATCH)
+        );
+        
+        if (fillingBatchesToday > 0) {
+          const fillingTime = fillingBatchesToday * FILLING_TIME_PER_BATCH;
+          dayTasks.push(`Make ${fillingBatchesToday} filling batches (${formatTime(fillingTime)})`);
+          dayActiveHours += fillingTime;
+          remainingFillingBatches -= fillingBatchesToday;
+        }
+        
+        // Add dough batches
+        const remainingDayHours = maxHours - dayActiveHours;
+        const doughBatchesToday = Math.min(
+          remainingDoughBatches,
+          Math.floor(remainingDayHours / DOUGH_TIME_PER_BATCH)
+        );
+        
+        if (doughBatchesToday > 0) {
+          const doughTime = doughBatchesToday * DOUGH_TIME_PER_BATCH;
+          dayTasks.push(`Make ${doughBatchesToday} dough batches (${formatTime(doughTime)})`);
+          dayActiveHours += doughTime;
+          remainingDoughBatches -= doughBatchesToday;
+        }
+        
+        // Add cleanup and chilling
+        dayTasks.push(`${formatTime(CLEANUP_TIME)} cleanup`);
+        dayTasks.push("30min dough chilling (passive)");
+        dayActiveHours += CLEANUP_TIME;
+        
+        prepDays.unshift({
+          date: new Date(currentDate),
+          tasks: dayTasks,
+          activeHours: dayActiveHours
+        });
+        
+        currentDate.setDate(currentDate.getDate() - 1);
+      }
+      
+      // Combine all days
+      const allDays = [...prepDays, ...workflowDays];
+      totalActiveHours = allDays.reduce((sum, day) => sum + day.activeHours, 0);
       
       // Display workflow
-      workflowDays.reverse().forEach(day => {
+      allDays.forEach(day => {
         const dayCard = document.createElement('div');
         dayCard.className = 'day-card';
         
@@ -151,8 +208,27 @@
           dayCard.appendChild(taskEl);
         });
         
+        const dayTotalEl = document.createElement('div');
+        dayTotalEl.className = 'day-total';
+        dayTotalEl.textContent = `Active time: ${formatTime(day.activeHours)}`;
+        dayCard.appendChild(dayTotalEl);
+        
         timeline.appendChild(dayCard);
       });
+      
+      // Display order total
+      document.getElementById('orderTotal').innerHTML = `
+        <h3>Order Summary</h3>
+        <p>Total empanadas: ${pies}</p>
+        <p>Total active time: ${formatTime(totalActiveHours)}</p>
+        <p>Production days: ${allDays.length}</p>
+      `;
+    }
+    
+    function formatTime(hours) {
+      const hrs = Math.floor(hours);
+      const mins = Math.round((hours - hrs) * 60);
+      return `${hrs > 0 ? `${hrs}h ` : ''}${mins > 0 ? `${mins}m` : ''}`.trim();
     }
   </script>
 </body>
