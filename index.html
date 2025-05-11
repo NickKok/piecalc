@@ -184,7 +184,7 @@
                     <input type="number" id="orderQuantity" min="1" value="72">
                 </div>
                 
-                <button onclick="calculateForOrder()">Calculate Ingredients</button>
+                <button id="calculateOrder">Calculate Ingredients</button>
                 
                 <div class="results" id="orderResults" style="display: none;">
                     <h3>Ingredients Needed</h3>
@@ -209,7 +209,7 @@
                     </select>
                 </div>
                 
-                <button onclick="calculateFromIngredients()">Calculate Production</button>
+                <button id="calculateFromIngredients">Calculate Production</button>
                 
                 <div class="results" id="ingredientResults" style="display: none;">
                     <h3>Production Capacity</h3>
@@ -268,13 +268,48 @@
         const ROUND_GRAMS_TO = 10;     // Nearest 10g
         const ROUND_TSP_TO = 0.25;     // Nearest 1/4 tsp
 
+        // Dough recipe per full batch (12 empanadas)
+        const doughRecipe = {
+            cakeFlour: 250,
+            breadFlour: 200,
+            margarine: 200,
+            salt: 2,
+            paprika: 1,
+            turmeric: 0.5,
+            bakingPowder: 0.25,
+            milkPowder: 2,
+            stockPowder: 2,
+            vinegar: 1,
+            water: 220
+        };
+        
+        // Filling recipe per full batch (12 empanadas)
+        const fillingRecipe = {
+            meat: 333,
+            vegetables: 100,
+            potato: 133,
+            onion: 33,
+            thickener: 1,
+            liquid: 50
+        };
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up event listeners
+            document.getElementById('calculateOrder').addEventListener('click', calculateForOrder);
+            document.getElementById('calculateFromIngredients').addEventListener('click', calculateFromIngredients);
+            
+            // Test calculation on load
+            calculateForOrder();
+        });
+
         // Calculate ingredients needed for a specific number of empanadas
         function calculateForOrder() {
             const quantity = parseInt(document.getElementById('orderQuantity').value);
             const orderResults = document.getElementById('orderResults');
             const orderResultsContent = document.getElementById('orderResultsContent');
             
-            if (isNaN(quantity) {
+            if (isNaN(quantity)) {
                 alert('Please enter a valid number');
                 return;
             }
@@ -284,7 +319,7 @@
                 return;
             }
             
-            // DOUGH CALCULATION (unchanged)
+            // DOUGH CALCULATION
             const doughBatches = Math.ceil(quantity / DOUGH_BATCH_SIZE);
             const doughIngredients = calculateIngredients(doughRecipe, doughBatches);
             
@@ -328,6 +363,63 @@
             `;
             
             orderResults.style.display = 'block';
+        }
+
+        // Calculate how many empanadas can be made from available ingredients
+        function calculateFromIngredients() {
+            const meatAvailable = parseFloat(document.getElementById('meatAvailable').value);
+            const calculationType = document.getElementById('ingredientType').value;
+            const ingredientResults = document.getElementById('ingredientResults');
+            const ingredientResultsContent = document.getElementById('ingredientResultsContent');
+            
+            if (isNaN(meatAvailable)) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            
+            if (meatAvailable <= 0) {
+                alert('Amount must be greater than 0');
+                return;
+            }
+            
+            let empanadasPossible, batchesPossible;
+            let limitingFactor = "";
+            
+            if (calculationType === 'meat') {
+                // Calculate based on meat availability
+                batchesPossible = meatAvailable / fillingRecipe.meat;
+                limitingFactor = "meat";
+            } else {
+                // Calculate based on dough (1kg meat makes 3 batches)
+                batchesPossible = meatAvailable / 333;
+                limitingFactor = "dough";
+            }
+            
+            empanadasPossible = Math.floor(batchesPossible * 12);
+            const doughBatches = Math.floor(batchesPossible);
+            const fillingBatches = Math.floor(batchesPossible);
+            
+            const doughIngredients = calculateIngredients(doughRecipe, doughBatches);
+            const fillingIngredients = calculateIngredients(fillingRecipe, fillingBatches);
+            
+            // Display results
+            ingredientResultsContent.innerHTML = `
+                <p><strong>With ${meatAvailable}g of meat (limited by ${limitingFactor}):</strong></p>
+                <p>You can make ${empanadasPossible} empanadas</p>
+                <p>Dough batches needed: ${doughBatches}</p>
+                <p>Filling batches needed: ${fillingBatches}</p>
+                
+                <h4>Additional Ingredients Needed:</h4>
+                <ul>
+                    <li>Cake flour: ${roundTo(doughIngredients.cakeFlour, ROUND_GRAMS_TO)}g</li>
+                    <li>Bread flour: ${roundTo(doughIngredients.breadFlour, ROUND_GRAMS_TO)}g</li>
+                    <li>Mixed vegetables: ${roundTo(fillingIngredients.vegetables, ROUND_GRAMS_TO)}g</li>
+                    <li>Potato: ${roundTo(fillingIngredients.potato, ROUND_GRAMS_TO)}g</li>
+                    <li>Onion: ${roundTo(fillingIngredients.onion, ROUND_GRAMS_TO)}g</li>
+                </ul>
+            `;
+            
+            ingredientResults.style.display = 'block';
         }
 
         // Helper functions
