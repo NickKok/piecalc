@@ -158,6 +158,13 @@
         .ingredient-list li {
             margin-bottom: 8px;
         }
+        
+        .batch-info {
+            background-color: #FFF8E1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -174,7 +181,7 @@
                 
                 <div class="input-group">
                     <label for="orderQuantity">Number of Empanadas Needed:</label>
-                    <input type="number" id="orderQuantity" min="1" value="12">
+                    <input type="number" id="orderQuantity" min="1" value="72">
                 </div>
                 
                 <button onclick="calculateForOrder()">Calculate Ingredients</button>
@@ -233,15 +240,18 @@
                 </div>
                 
                 <div class="recipe-column">
-                    <h3>Filling (per batch - for 12 empanadas)</h3>
+                    <h3>Filling (per 12 empanadas)</h3>
                     <ul class="ingredient-list">
-                        <li>Meat: 333g (beef or chicken)</li>
+                        <li>Meat: 333g</li>
                         <li>Mixed vegetables: 100g</li>
-                        <li>Potato: 133g, cubed</li>
-                        <li>Onion: 33g, diced</li>
-                        <li>Thickener: 1 tbsp flour/cornstarch</li>
+                        <li>Potato: 133g</li>
+                        <li>Onion: 33g</li>
+                        <li>Thickener: 1 tbsp</li>
                         <li>Water/stock: 50ml</li>
                     </ul>
+                    <div class="batch-info">
+                        <strong>Note:</strong> Filling batches consolidate to max 1kg meat (36 empanadas per large batch)
+                    </div>
                 </div>
             </div>
         </div>
@@ -249,148 +259,88 @@
 
     <script>
         // Constants
-        const DOUGH_BATCH_SIZE = 12;
-        const FILLING_BATCH_SIZE = 12;
+        const DOUGH_BATCH_SIZE = 12;  // empanadas per standard dough batch
+        const FILLING_BATCH_SIZE = 12; // empanadas per standard filling batch
+        const MAX_MEAT_PER_BATCH = 1000; // 1kg meat limit per filling batch
+        const MAX_DOUGH_WEIGHT = 1000;  // 1kg dough limit per batch
         
-        // Dough ingredients per batch
-        const doughRecipe = {
-            cakeFlour: 250,
-            breadFlour: 200,
-            margarine: 200,
-            salt: 2,
-            paprika: 1,
-            turmeric: 0.5,
-            bakingPowder: 0.25,
-            milkPowder: 2,
-            stockPowder: 2,
-            vinegar: 1,
-            water: 220
-        };
-        
-        // Filling ingredients per batch
-        const fillingRecipe = {
-            meat: 333,
-            vegetables: 100,
-            potato: 133,
-            onion: 33,
-            thickener: 1,
-            liquid: 50
-        };
-        
+        // Rounding rules
+        const ROUND_GRAMS_TO = 10;     // Nearest 10g
+        const ROUND_TSP_TO = 0.25;     // Nearest 1/4 tsp
+
         // Calculate ingredients needed for a specific number of empanadas
         function calculateForOrder() {
             const quantity = parseInt(document.getElementById('orderQuantity').value);
             const orderResults = document.getElementById('orderResults');
             const orderResultsContent = document.getElementById('orderResultsContent');
             
-            if (isNaN(quantity) || quantity < 1) {
-                alert('Please enter a valid number of empanadas (at least 1)');
+            if (isNaN(quantity) {
+                alert('Please enter a valid number');
                 return;
             }
             
-            // Calculate number of batches needed (round up)
-            const doughBatches = Math.ceil(quantity / DOUGH_BATCH_SIZE);
-            const fillingBatches = Math.ceil(quantity / FILLING_BATCH_SIZE);
+            if (quantity < 1) {
+                alert('Quantity must be at least 1');
+                return;
+            }
             
-            // Calculate ingredients
+            // DOUGH CALCULATION (unchanged)
+            const doughBatches = Math.ceil(quantity / DOUGH_BATCH_SIZE);
             const doughIngredients = calculateIngredients(doughRecipe, doughBatches);
-            const fillingIngredients = calculateIngredients(fillingRecipe, fillingBatches);
+            
+            // FILLING CALCULATION (adjusted for 1kg meat batches)
+            const fillingBatches = Math.ceil((quantity * fillingRecipe.meat / FILLING_BATCH_SIZE) / MAX_MEAT_PER_BATCH);
+            const largeFillingMultiplier = quantity / (fillingBatches * FILLING_BATCH_SIZE);
+            const fillingIngredients = calculateIngredients(fillingRecipe, largeFillingMultiplier * fillingBatches);
             
             // Display results
             orderResultsContent.innerHTML = `
-                <p><strong>For ${quantity} empanadas you need:</strong></p>
-                <p>Dough batches: ${doughBatches}</p>
-                <p>Filling batches: ${fillingBatches}</p>
+                <div class="batch-info">
+                    <p><strong>For ${quantity} empanadas you need:</strong></p>
+                    <p>Dough: ${doughBatches} standard batches (12 empanadas each)</p>
+                    <p>Filling: ${fillingBatches} large batches (${Math.round(quantity/fillingBatches)} empanadas each, max 1kg meat per batch)</p>
+                </div>
                 
                 <h4>Dough Ingredients:</h4>
                 <ul>
-                    <li>Cake flour: ${doughIngredients.cakeFlour}g</li>
-                    <li>Bread flour: ${doughIngredients.breadFlour}g</li>
-                    <li>Cold margarine: ${doughIngredients.margarine}g</li>
-                    ${formatTeaspoonIngredients(doughIngredients, ['salt', 'paprika', 'turmeric', 'bakingPowder', 'milkPowder', 'stockPowder', 'vinegar'])}
-                    <li>Ice-cold water: ~${doughIngredients.water}ml</li>
+                    <li>Cake flour: ${roundTo(doughIngredients.cakeFlour, ROUND_GRAMS_TO)}g</li>
+                    <li>Bread flour: ${roundTo(doughIngredients.breadFlour, ROUND_GRAMS_TO)}g</li>
+                    <li>Cold margarine: ${roundTo(doughIngredients.margarine, ROUND_GRAMS_TO)}g</li>
+                    <li>Salt: ${roundTo(doughIngredients.salt, ROUND_TSP_TO)} tsp</li>
+                    <li>Paprika: ${roundTo(doughIngredients.paprika, ROUND_TSP_TO)} tsp</li>
+                    <li>Turmeric: ${roundTo(doughIngredients.turmeric, ROUND_TSP_TO)} tsp</li>
+                    <li>Baking powder: ${roundTo(doughIngredients.bakingPowder, ROUND_TSP_TO)} tsp</li>
+                    <li>Milk powder: ${roundTo(doughIngredients.milkPowder, ROUND_TSP_TO)} tsp</li>
+                    <li>Garlic/onion stock powder: ${roundTo(doughIngredients.stockPowder, ROUND_TSP_TO)} tsp</li>
+                    <li>White vinegar: ${roundTo(doughIngredients.vinegar, ROUND_TSP_TO)} tsp</li>
+                    <li>Ice-cold water: ~${roundTo(doughIngredients.water, ROUND_GRAMS_TO)}ml</li>
                 </ul>
                 
                 <h4>Filling Ingredients:</h4>
                 <ul>
-                    <li>Meat: ${fillingIngredients.meat}g</li>
-                    <li>Mixed vegetables: ${fillingIngredients.vegetables}g</li>
-                    <li>Potato: ${fillingIngredients.potato}g</li>
-                    <li>Onion: ${fillingIngredients.onion}g</li>
-                    <li>Thickener: ${fillingIngredients.thickener}tbsp</li>
-                    <li>Water/stock: ${fillingIngredients.liquid}ml</li>
+                    <li>Meat: ${roundTo(fillingIngredients.meat, ROUND_GRAMS_TO)}g (${fillingBatches} × ${roundTo(fillingIngredients.meat/fillingBatches, ROUND_GRAMS_TO)}g per batch)</li>
+                    <li>Mixed vegetables: ${roundTo(fillingIngredients.vegetables, ROUND_GRAMS_TO)}g</li>
+                    <li>Potato: ${roundTo(fillingIngredients.potato, ROUND_GRAMS_TO)}g</li>
+                    <li>Onion: ${roundTo(fillingIngredients.onion, ROUND_GRAMS_TO)}g</li>
+                    <li>Thickener: ${roundTo(fillingIngredients.thickener, ROUND_TSP_TO)} tbsp</li>
+                    <li>Water/stock: ${roundTo(fillingIngredients.liquid, ROUND_GRAMS_TO)}ml</li>
                 </ul>
             `;
             
             orderResults.style.display = 'block';
         }
-        
-        // Calculate how many empanadas can be made from available ingredients
-        function calculateFromIngredients() {
-            const meatAvailable = parseFloat(document.getElementById('meatAvailable').value);
-            const calculationType = document.getElementById('ingredientType').value;
-            const ingredientResults = document.getElementById('ingredientResults');
-            const ingredientResultsContent = document.getElementById('ingredientResultsContent');
-            
-            if (isNaN(meatAvailable) || meatAvailable <= 0) {
-                alert('Please enter a valid amount of meat (greater than 0)');
-                return;
-            }
-            
-            let empanadasPossible, batchesPossible;
-            let limitingFactor = "";
-            
-            if (calculationType === 'meat') {
-                // Calculate based on meat availability
-                batchesPossible = meatAvailable / fillingRecipe.meat;
-                limitingFactor = "meat";
-            } else {
-                // Calculate based on dough (1kg meat makes 3 batches)
-                batchesPossible = meatAvailable / 333;
-                limitingFactor = "dough";
-            }
-            
-            empanadasPossible = Math.floor(batchesPossible * 12);
-            const doughBatches = Math.floor(batchesPossible);
-            const fillingBatches = Math.floor(batchesPossible);
-            
-            const doughIngredients = calculateIngredients(doughRecipe, doughBatches);
-            const fillingIngredients = calculateIngredients(fillingRecipe, fillingBatches);
-            
-            // Display results
-            ingredientResultsContent.innerHTML = `
-                <p><strong>With ${meatAvailable}g of meat (limited by ${limitingFactor}):</strong></p>
-                <p>You can make ${empanadasPossible} empanadas</p>
-                <p>Dough batches needed: ${doughBatches}</p>
-                <p>Filling batches needed: ${fillingBatches}</p>
-                
-                <h4>Additional Ingredients Needed:</h4>
-                <ul>
-                    <li>Cake flour: ${doughIngredients.cakeFlour}g</li>
-                    <li>Bread flour: ${doughIngredients.breadFlour}g</li>
-                    <li>Mixed vegetables: ${fillingIngredients.vegetables}g</li>
-                    <li>Potato: ${fillingIngredients.potato}g</li>
-                    <li>Onion: ${fillingIngredients.onion}g</li>
-                </ul>
-            `;
-            
-            ingredientResults.style.display = 'block';
+
+        // Helper functions
+        function roundTo(value, increment) {
+            return Math.round(value / increment) * increment;
         }
-        
-        // Helper function to calculate scaled ingredients
-        function calculateIngredients(recipe, batches) {
+
+        function calculateIngredients(recipe, multiplier) {
             const scaled = {};
             for (const [ingredient, amount] of Object.entries(recipe)) {
-                scaled[ingredient] = Math.round(amount * batches * 100) / 100;
+                scaled[ingredient] = amount * multiplier;
             }
             return scaled;
-        }
-        
-        // Helper to format teaspoon ingredients
-        function formatTeaspoonIngredients(ingredients, keys) {
-            return keys.map(key => 
-                `<li>${key.charAt(0).toUpperCase() + key.slice(1)}: ${ingredients[key]}${key === 'vinegar' ? ' tsp' : ' tsp'}</li>`
-            ).join('');
         }
     </script>
 </body>
