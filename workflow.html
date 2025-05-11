@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Empanada Workflow Planner</title>
+  <style>
+    /* Reuse your existing styles */
+    :root { --primary: #FF6B35; --secondary: #004E89; --accent: #FFBE0B; }
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { background: var(--primary); color: white; padding: 20px; border-radius: 10px; }
+    button { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 5px; }
+    .input-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; color: var(--secondary); }
+    input, select { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; }
+    
+    /* Workflow-specific styles */
+    .timeline { margin-top: 30px; }
+    .day-card { 
+      background: white; 
+      border-left: 4px solid var(--accent);
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .task { 
+      display: flex; 
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Empanada Workflow Planner</h1>
+      <p>Calculate your production schedule for orders</p>
+    </header>
+
+    <div class="calculator">
+      <div class="input-group">
+        <label for="pieQuantity">Number of Empanadas:</label>
+        <input type="number" id="pieQuantity" min="12" value="72" step="12">
+      </div>
+      
+      <div class="input-group">
+        <label for="deliveryDate">Delivery By:</label>
+        <input type="date" id="deliveryDate" min="">
+      </div>
+      
+      <div class="input-group">
+        <label>
+          <input type="checkbox" id="needsDelivery"> Include 1-hour delivery time
+        </label>
+      </div>
+      
+      <button id="generateWorkflow">Generate Workflow</button>
+    </div>
+
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <script>
+    // Set minimum date to today
+    document.getElementById('deliveryDate').min = new Date().toISOString().split('T')[0];
+
+    document.getElementById('generateWorkflow').addEventListener('click', function() {
+      const pies = parseInt(document.getElementById('pieQuantity').value);
+      const deliveryDate = new Date(document.getElementById('deliveryDate').value);
+      const needsDelivery = document.getElementById('needsDelivery').checked;
+      
+      if (isNaN(pies) || pies < 12) {
+        alert("Minimum order is 12 empanadas");
+        return;
+      }
+
+      generateWorkflow(pies, deliveryDate, needsDelivery);
+    });
+
+    function generateWorkflow(pies, deliveryDate, needsDelivery) {
+      const timeline = document.getElementById('timeline');
+      timeline.innerHTML = '';
+      
+      // Calculate batches
+      const fillingBatches = Math.ceil(pies / 36); // 1kg meat batches (36 pies)
+      const doughBatches = Math.ceil(pies / 12);  // Standard dough batches
+      
+      // Time estimates (hours)
+      const PREP_TIME = 0.5; // Ingredient check
+      const FILLING_TIME = 1 * fillingBatches;
+      const DOUGH_TIME = (20/60) * doughBatches;
+      const ASSEMBLY_TIME = (20/60) * (pies/12);
+      const DELIVERY_TIME = needsDelivery ? 1 : 0;
+      
+      // Generate workflow days (starting from delivery day backwards)
+      const workflowDays = [];
+      let remainingPies = pies;
+      let currentDate = new Date(deliveryDate);
+      
+      // Deduct delivery day if needed
+      if (needsDelivery) {
+        workflowDays.push({
+          date: new Date(currentDate),
+          tasks: ["Delivery (1 hour)"]
+        });
+        currentDate.setDate(currentDate.getDate() - 1);
+      }
+      
+      // Assembly Days (last step before delivery)
+      const assemblyDays = Math.ceil(remainingPies / 72); // 72 pies/day max
+      for (let i = 0; i < assemblyDays; i++) {
+        const piesToday = Math.min(remainingPies, 72);
+        workflowDays.push({
+          date: new Date(currentDate),
+          tasks: [
+            `Assemble ${piesToday} pies (${Math.round((piesToday/12)*20)}min)`,
+            "30min cleanup",
+            `Freeze ${piesToday} pies (passive 5hrs)`
+          ]
+        });
+        remainingPies -= piesToday;
+        currentDate.setDate(currentDate.getDate() - 1);
+      }
+      
+      // Prep Days (filling + dough)
+      workflowDays.push({
+        date: new Date(currentDate),
+        tasks: [
+          "30min ingredient check",
+          `Make ${fillingBatches} filling batches (${fillingBatches}hr)`,
+          `Make ${doughBatches} dough batches (${Math.round(doughBatches*20)}min)`,
+          "30min cleanup",
+          "30min dough chilling (passive)"
+        ]
+      });
+      
+      // Display workflow
+      workflowDays.reverse().forEach(day => {
+        const dayCard = document.createElement('div');
+        dayCard.className = 'day-card';
+        
+        const dateStr = day.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        dayCard.innerHTML = `<h3>${dateStr}</h3>`;
+        
+        day.tasks.forEach(task => {
+          const taskEl = document.createElement('div');
+          taskEl.className = 'task';
+          taskEl.textContent = task;
+          dayCard.appendChild(taskEl);
+        });
+        
+        timeline.appendChild(dayCard);
+      });
+    }
+  </script>
+</body>
+</html>
